@@ -1,4 +1,3 @@
-module HRX (someFunc) where
+module HRX (parse, Archive (..), ParserError) where
 
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+import HRX.Parser (Archive (..), ParserError, parse)

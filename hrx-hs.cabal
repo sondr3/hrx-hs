@@ -1,5 +1,5 @@
 cabal-version:      2.4
-name:               hrx-hs
+name:               hrx
 version:            0.1.0
 tested-with:        GHC ==8.10.2
 synopsis:           A Haskell implementation of Google's HRX archive format
@@ -46,7 +46,7 @@ library
   hs-source-dirs:  lib
 
   if flag(dev)
-    ghc-options: -Wall -Werror
+    ghc-options: -O0 -Wall -Werror
 
   else
     ghc-options: -O2 -Wall
@@ -61,8 +61,11 @@ test-suite hrx-hs-test
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Spec.hs
+  other-modules: HRX.TestUtils
+  default-extensions: OverloadedStrings
   build-tool-depends: hspec-discover:hspec-discover ^>=2.7.4
   build-depends:
+    , hrx -any
     , hspec             ^>=2.7.4
     , hspec-megaparsec  ^>=2.2.0
 
