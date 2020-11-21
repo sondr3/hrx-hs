@@ -1,3 +1,3 @@
-module HRX (parse, Archive (..), Entry (..), ParserError) where
+module HRX (parse) where
 
-import HRX.Parser (Archive (..), Entry (..), ParserError, parse)
+import HRX.Internal (parse)

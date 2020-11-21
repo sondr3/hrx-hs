@@ -1,7 +1,7 @@
 module HRX.TestUtils (testParser, testParser') where
 
 import Data.Text (Text)
-import HRX (Archive, parse)
+import HRX.Internal (Archive, parse)
 
 -- | Parse a test case and return the parsed archive or throw a generic error.
 testParser :: Text -> Archive

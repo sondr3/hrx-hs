@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRX.Parser (parse, ParserError, Archive (..), Entry (..)) where
+module HRX.Parser where
 
 import Control.Monad (void)
 import Control.Monad.State (State, evalState, get, put)

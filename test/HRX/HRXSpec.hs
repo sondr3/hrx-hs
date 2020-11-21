@@ -1,7 +1,7 @@
 module HRX.HRXSpec (spec) where
 
 import qualified Data.Text as T
-import HRX (Archive (..), Entry (..))
+import HRX.Internal (Archive (..), Entry (..))
 import HRX.TestUtils (testParser)
 import Test.Hspec
 

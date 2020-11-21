@@ -21,7 +21,6 @@ source-repository head
   location: https://github.com/sondr3/hrx-hs.git
 
 common config
-  build-depends:      base ^>=4.14.1.0
   default-language:   Haskell2010  
   default-extensions: NamedFieldPuns
   ghc-options:
@@ -29,23 +28,14 @@ common config
     -Wincomplete-uni-patterns -Wredundant-constraints
 
   build-depends:
+    , base        ^>=4.14.1.0
     , megaparsec  ^>=9.0.1
     , text        ^>=1.2.3.2
 
-flag dev
-  description: Turn on development settings.
-  default:     False
-  manual:      True
-
-library
-  import:          config
-  exposed-modules: HRX
-  other-modules:   HRX.Parser
+common library
   build-depends:
     , containers  ^>=0.6.2.1
     , mtl         ^>=2.2.2
-
-  hs-source-dirs:  lib
 
   if flag(dev)
     ghc-options: -O0 -Wall -Werror
@@ -58,6 +48,27 @@ library
       -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns
       -Wnoncanonical-monad-instances
 
+flag dev
+  description: Turn on development settings.
+  default:     False
+  manual:      True
+
+library hrx-internal
+  import:          config, library
+  other-modules:   HRX.Parser
+  exposed-modules: HRX.Internal
+  hs-source-dirs:  lib
+
+library
+  import:          config, library
+  exposed-modules: HRX
+  other-modules:
+    HRX.Internal
+    HRX.Parser
+
+  build-depends:   hrx-internal
+  hs-source-dirs:  lib
+
 test-suite hrx-hs-test
   import:             config
   type:               exitcode-stdio-1.0
@@ -67,8 +78,9 @@ test-suite hrx-hs-test
   default-extensions: OverloadedStrings
   build-tool-depends: hspec-discover:hspec-discover ^>=2.7.4
   build-depends:
-    , hrx
+    , hrx-internal
     , hspec             ^>=2.7.4
     , hspec-megaparsec  ^>=2.2.0
 
   other-modules:      HRX.HRXSpec
+  ghc-options:        -threaded -rtsopts -with-rtsopts=-N
