@@ -41,8 +41,10 @@ library
   import:          config
   exposed-modules: HRX
   other-modules:   HRX.Parser
+  build-depends:
+    , containers  ^>=0.6.2.1
+    , mtl         ^>=2.2.2
 
-  -- build-depends:
   hs-source-dirs:  lib
 
   if flag(dev)
@@ -61,11 +63,11 @@ test-suite hrx-hs-test
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Spec.hs
-  other-modules: HRX.TestUtils
+  other-modules:      HRX.TestUtils
   default-extensions: OverloadedStrings
   build-tool-depends: hspec-discover:hspec-discover ^>=2.7.4
   build-depends:
-    , hrx -any
+    , hrx
     , hspec             ^>=2.7.4
     , hspec-megaparsec  ^>=2.2.0
 

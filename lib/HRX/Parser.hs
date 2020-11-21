@@ -1,17 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRX.Parser (parse, ParserError, Archive (..)) where
+module HRX.Parser (parse, ParserError, Archive (..), Entry (..)) where
 
-import Control.Applicative hiding (many, some)
 import Control.Monad (void)
+import Control.Monad.State (State, evalState, get, put)
+import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Void
+import Data.Void (Void)
 import Debug.Trace (trace)
 import Text.Megaparsec hiding (State, parse)
-import Text.Megaparsec.Char
+import Text.Megaparsec.Char (alphaNumChar, char, eol, string)
 
-type Parser = Parsec Void Text
+type Parser = ParsecT Void Text (State (Maybe Int))
 
 newtype ParserError = ParserError String deriving (Show, Eq)
 
@@ -19,8 +20,6 @@ newtype Archive = Archive
   { archiveEntries :: [Entry]
   }
   deriving (Show, Eq)
-
-data Comment = Comment {commentWidth :: Int, commentText :: Text} deriving (Show, Eq)
 
 data Entry = Entry
   { entryFile :: Text,
@@ -34,21 +33,23 @@ isNewline x = x == '\n' || x == '\r'
 notNewline :: Char -> Bool
 notNewline = not . isNewline
 
-pBoundary :: Parser Int
+pBoundary :: Parser ()
 pBoundary = do
   width <- T.length <$> (char '<' *> takeWhile1P Nothing (== '=') <* char '>')
-  return $ width + 2
+  reqWidth <- get
+  case reqWidth of
+    Nothing -> put (Just $ width + 2)
+    Just w -> if width + 2 /= w then failure Nothing Set.empty else pure ()
 
-pComment :: Parser Comment
+pComment :: Parser ()
 pComment = do
-  commentWidth <- pBoundary
+  void pBoundary
   void $ char '\n'
-  commentText <- takeWhile1P (Just "Comment") notNewline
-  return Comment {commentWidth, commentText}
+  void $ takeWhile1P (Just "Comment") notNewline
 
 pEntry :: Parser Entry
 pEntry = do
-  void (try $ do pComment)
+  void (optional . try $ do pComment)
   void pBoundary
   void $ char ' '
   entryFile <- takeWhile1P Nothing notNewline
@@ -64,7 +65,7 @@ pArchive = do
   return Archive {archiveEntries}
 
 parse :: String -> Text -> Either ParserError Archive
-parse file input = case runParser pArchive file input of
+parse file input = case evalState (runParserT pArchive file input) Nothing of
   Right archive -> Right archive
   Left err -> do
     trace (errorBundlePretty err) (pure ())
