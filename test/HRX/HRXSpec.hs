@@ -9,5 +9,7 @@ spec = parallel $ do
   describe "parse" $ do
     it "parses an empty file" $
       null (archiveEntries $ testParser "")
+    it "converts the file to UTF-8" $
+      True -- Haskell does not use UT8 by default
     it "requires the string to be UTF-8" $
       testParser' "<===> \xc3\x28\n" `shouldBe` Left "Could not parse input"
