@@ -21,3 +21,7 @@ spec = parallel $ do
         entryFile (head (archiveEntries subject)) `shouldBe` "file"
       it "parses the contents" $
         entryContent (head (archiveEntries subject)) `shouldBe` "contents\n"
+
+    it "parses contents with boundary-like sequences" $ do
+      let subject = testParser (T.unlines ["<===> file", "<==>", "inline <===>", "<====>"])
+      entryContent (head $ archiveEntries subject) `shouldBe` T.unlines ["<==>", "inline <===>", "<====>"]

@@ -10,20 +10,22 @@ import qualified Data.Text as T
 import Data.Void (Void)
 import Debug.Trace (trace)
 import Text.Megaparsec hiding (State, parse)
-import Text.Megaparsec.Char (alphaNumChar, char, eol, string)
+import Text.Megaparsec.Char (char, eol, string)
 
-type Parser = ParsecT Void Text (State (Maybe Int))
+type Parser = ParsecT Void Text (State (Maybe Text))
 
 newtype ParserError = ParserError String deriving (Show, Eq)
 
-newtype Archive = Archive
-  { archiveEntries :: [Entry]
+data Archive = Archive
+  { archiveComment :: Maybe Text,
+    archiveEntries :: [Entry]
   }
   deriving (Show, Eq)
 
 data Entry = Entry
   { entryFile :: Text,
-    entryContent :: Text
+    entryContent :: Text,
+    entryComment :: Maybe Text
   }
   deriving (Show, Eq)
 
@@ -33,36 +35,46 @@ isNewline x = x == '\n' || x == '\r'
 notNewline :: Char -> Bool
 notNewline = not . isNewline
 
-pBoundary :: Parser ()
+pBoundary :: Parser Text
 pBoundary = do
-  width <- T.length <$> (char '<' *> takeWhile1P Nothing (== '=') <* char '>')
-  reqWidth <- get
-  case reqWidth of
-    Nothing -> put (Just $ width + 2)
-    Just w -> if width + 2 /= w then failure Nothing Set.empty else pure ()
+  eqs <- char '<' *> takeWhile1P Nothing (== '=') <* char '>'
+  let boundary = "<" <> eqs <> ">"
+  archiveBoundary <- get
+  case archiveBoundary of
+    Nothing -> do
+      put (Just boundary)
+      return boundary
+    Just w -> if boundary /= w then failure Nothing Set.empty else return w
 
-pComment :: Parser ()
+pComment :: Parser Text
 pComment = do
   void pBoundary
   void $ char '\n'
-  void $ takeWhile1P (Just "Comment") notNewline
+  takeWhile1P (Just "Comment") notNewline
+
+pEntryContent :: Parser Text
+pEntryContent = do
+  archiveBoundary <- get
+  case archiveBoundary of
+    Nothing -> T.pack <$> many anySingle
+    Just b -> T.pack <$> many anySingle <* notFollowedBy (string b)
 
 pEntry :: Parser Entry
 pEntry = do
-  void (optional . try $ do pComment)
-  void pBoundary
-  void $ char ' '
-  entryFile <- takeWhile1P Nothing notNewline
+  entryComment <- optional . try $ do pComment <?> "Entry comment"
+  void pBoundary <?> "Entry boundary"
+  void (char ' ' <?> "Boundary space")
+  entryFile <- takeWhile1P (Just "Entry filename") notNewline
   void eol
-  entryContent <- T.pack <$> many (alphaNumChar <|> char ' ' <|> char '\n') <* notFollowedBy (string "\n<=")
+  entryContent <- pEntryContent
 
-  return Entry {entryFile, entryContent}
+  return Entry {entryFile, entryContent, entryComment}
 
 pArchive :: Parser Archive
 pArchive = do
-  void (optional . try $ do pComment)
+  archiveComment <- optional . try $ do pComment
   archiveEntries <- many pEntry
-  return Archive {archiveEntries}
+  return Archive {archiveComment, archiveEntries}
 
 parse :: String -> Text -> Either ParserError Archive
 parse file input = case evalState (runParserT pArchive file input) Nothing of
