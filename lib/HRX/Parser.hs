@@ -3,7 +3,7 @@
 module HRX.Parser where
 
 import Control.Monad (void)
-import Control.Monad.State (State, evalState, get, put)
+import Control.Monad.Identity (Identity)
 import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -82,3 +82,17 @@ parse file input = case evalState (runParserT pArchive file input) Nothing of
   Left err -> do
     trace (errorBundlePretty err) (pure ())
     Left $ ParserError "Could not parse input"
+
+-- | Internal testing tool to use since 'parseTest' doesn't work with state.
+parseTest' ::
+  ( Show a,
+    VisualStream s,
+    TraversableStream s,
+    ShowErrorComponent e
+  ) =>
+  ParsecT e s (StateT (Maybe m) Identity) a ->
+  s ->
+  IO ()
+parseTest' parser input = case evalState (runParserT parser "" input) Nothing of
+  Right x -> print x
+  Left err -> putStrLn $ errorBundlePretty err
