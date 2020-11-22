@@ -4,6 +4,7 @@ module HRX.Parser where
 
 import Control.Monad (void)
 import Control.Monad.Identity (Identity)
+import Control.Monad.State (State, StateT, evalState, get, put)
 import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -35,6 +36,9 @@ isNewline x = x == '\n' || x == '\r'
 notNewline :: Char -> Bool
 notNewline = not . isNewline
 
+notBoundary :: Text -> Text -> Bool
+notBoundary b t = b /= t || ("\n" <> b) /= t
+
 pBoundary :: Parser Text
 pBoundary = do
   eqs <- char '<' *> takeWhile1P Nothing (== '=') <* char '>'
@@ -43,6 +47,7 @@ pBoundary = do
   case archiveBoundary of
     Nothing -> do
       put (Just boundary)
+      void (trace (T.unpack boundary) (pure ()))
       return boundary
     Just w -> if boundary /= w then failure Nothing Set.empty else return w
 
@@ -50,14 +55,16 @@ pComment :: Parser Text
 pComment = do
   void pBoundary
   void $ char '\n'
-  takeWhile1P (Just "Comment") notNewline
+  takeWhile1P (Just "Comment") notNewline <* char '\n'
 
 pEntryContent :: Parser Text
 pEntryContent = do
   archiveBoundary <- get
   case archiveBoundary of
     Nothing -> T.pack <$> many anySingle
-    Just b -> T.pack <$> many anySingle <* notFollowedBy (string b)
+    -- Just b -> T.pack <$> manyTill anySingle (lookAhead (try (string b)))
+    -- Just b -> T.pack <$> manyTill anySingle (lookAhead (string b)) <?> "Entry content"
+    Just b -> T.pack <$> manyTill anySingle (lookAhead (string b <|> string ("\n" <> b)))
 
 pEntry :: Parser Entry
 pEntry = do
@@ -72,8 +79,8 @@ pEntry = do
 
 pArchive :: Parser Archive
 pArchive = do
-  archiveComment <- optional . try $ do pComment
   archiveEntries <- many pEntry
+  archiveComment <- optional . try $ do pComment
   return Archive {archiveComment, archiveEntries}
 
 parse :: String -> Text -> Either ParserError Archive
