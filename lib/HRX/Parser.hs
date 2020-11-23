@@ -1,10 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module HRX.Parser where
 
 import Control.Monad (void)
 import Control.Monad.Identity (Identity)
 import Control.Monad.State (State, StateT, evalState, get, put)
+import Data.Char (ord)
+import Data.List (intercalate)
 import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -13,9 +16,21 @@ import Debug.Trace (trace)
 import Text.Megaparsec hiding (State, parse)
 import Text.Megaparsec.Char (char, eol, string)
 
+type Parser' = Parsec ParserError Text
+
 type Parser = ParsecT Void Text (State (Maybe Text))
 
-newtype ParserError = ParserError String deriving (Show, Eq)
+showPosStack :: [String] -> String
+showPosStack = intercalate ", " . fmap ("in " ++)
+
+data ParserError
+  = ParserError Text
+  | PathError Text
+  deriving (Show, Eq, Ord)
+
+instance ShowErrorComponent ParserError where
+  showErrorComponent (ParserError e) = T.unpack e ++ "generic error happened"
+  showErrorComponent (PathError e) = T.unpack e ++ " is not a valid path"
 
 data Archive = Archive
   { archiveComment :: Maybe Text,
@@ -38,6 +53,33 @@ notNewline = not . isNewline
 
 notBoundary :: Text -> Text -> Bool
 notBoundary b t = b /= t || ("\n" <> b) /= t
+
+isPath :: Char -> Bool
+isPath c = isPathChar c || c == '/'
+
+isPathComponent :: Char -> Bool
+isPathComponent = isPathChar
+
+isPathChar :: Char -> Bool
+isPathChar p =
+  not $
+    chr <= 31 -- Control code between U+0000 through U+001F
+      || chr == 127 -- U+007F DELETE
+      || chr == 47 -- U+002F SOLIDUS
+      || chr == 58 -- U+003A COLON
+      || chr == 92 -- U+005C REVERSE SOLIDUS
+  where
+    chr = ord p
+
+pPath :: Parser' Text
+pPath = do
+  path <- takeWhile1P (Just "path") isPathComponent <> takeWhile1P Nothing isPath
+  if invalidPath path
+    then customFailure $ PathError path
+    else return path
+  where
+    invalidPath p = any ((== True) . invalid) (T.split (== '/') p) || T.isInfixOf "//" p
+    invalid x = x `elem` [".", ".."]
 
 pBoundary :: Parser Text
 pBoundary = do

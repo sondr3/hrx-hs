@@ -1,4 +1,4 @@
-module HRX.TestUtils (testParser, testParser') where
+module HRX.TestUtils where
 
 import Data.Text (Text)
 import HRX.Internal (Archive, parse)
