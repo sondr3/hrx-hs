@@ -1,6 +1,6 @@
 module HRX.ParserSpec (spec) where
 
-import HRX.Internal (isPathChar, isPathComponent, pPath)
+import HRX.Internal (isPathChar, pPath)
 import Test.Hspec
 import Test.Hspec.Megaparsec
 import Text.Megaparsec (parse)
@@ -12,11 +12,6 @@ spec = parallel $ do
       all ((== True) . isPathChar) ['a', 'b', '.', '@', '$'] `shouldBe` True
     it "does not allow illegal chars" $
       all ((== False) . isPathChar) ['/', ':', '\\', '\DEL', '\FF'] `shouldBe` True
-  describe "path-component" $ do
-    it "parses correct chars" $
-      all ((== True) . isPathComponent) ['a', 'b', '@', '$'] `shouldBe` True
-    it "does not allow illegal chars" $
-      all ((== False) . isPathComponent) ['/', ':', '\\', '\DEL', '\FF'] `shouldBe` True
 
   describe "parses path" $ do
     it "parses" $ do

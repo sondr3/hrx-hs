@@ -15,7 +15,6 @@ import Data.Void (Void)
 import Debug.Trace (trace)
 import Text.Megaparsec hiding (State, parse)
 import Text.Megaparsec.Char (char, eol, string)
-import Text.Megaparsec.Debug (dbg)
 
 type Parser' = Parsec ParserError Text
 
@@ -54,12 +53,6 @@ notNewline = not . isNewline
 
 notBoundary :: Text -> Text -> Bool
 notBoundary b t = b /= t || ("\n" <> b) /= t
-
-isPath :: Char -> Bool
-isPath c = isPathChar c || c == '/'
-
-isPathComponent :: Char -> Bool
-isPathComponent = isPathChar
 
 isPathChar :: Char -> Bool
 isPathChar p =
