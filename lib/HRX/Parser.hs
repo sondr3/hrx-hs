@@ -15,6 +15,7 @@ import Data.Void (Void)
 import Debug.Trace (trace)
 import Text.Megaparsec hiding (State, parse)
 import Text.Megaparsec.Char (char, eol, string)
+import Text.Megaparsec.Debug (dbg)
 
 type Parser' = Parsec ParserError Text
 
@@ -71,15 +72,22 @@ isPathChar p =
   where
     chr = ord p
 
+pPathComponent :: Parser' Text
+pPathComponent = do
+  comp <- takeWhile1P Nothing isPathChar
+  if valid comp then return comp else customFailure $ PathError comp
+  where
+    valid x = x /= "." && x /= ".."
+
+pSlash :: Parser' Text
+pSlash = string "/" <* notFollowedBy (string "/")
+
 pPath :: Parser' Text
 pPath = do
-  path <- takeWhile1P (Just "path") isPathComponent <> takeWhile1P Nothing isPath
-  if invalidPath path
-    then customFailure $ PathError path
-    else return path
-  where
-    invalidPath p = any ((== True) . invalid) (T.split (== '/') p) || T.isInfixOf "//" p
-    invalid x = x `elem` [".", ".."]
+  -- path <- takeWhile1P (Just "path") isPathComponent <> takeWhile1P Nothing isPath
+  root <- pPathComponent
+  rest <- some (pSlash <|> pPathComponent) <* notFollowedBy (string "/")
+  return $ root <> T.concat rest
 
 pBoundary :: Parser Text
 pBoundary = do

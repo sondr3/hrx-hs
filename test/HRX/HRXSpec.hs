@@ -1,13 +1,15 @@
 module HRX.HRXSpec (spec) where
 
 import qualified Data.Text as T
-import HRX.Internal (Archive (..), Entry (..))
+import HRX.Internal (Archive (..), Entry (..), pBoundary, pPath)
 import HRX.TestUtils (testParser)
 import Test.Hspec
+import Test.Hspec.Megaparsec
+import Text.Megaparsec (runParser', runParserT, runParserT')
 
 spec :: Spec
 spec = parallel $ do
-  describe "parse" $ do
+  xdescribe "parse" $ do
     it "parses an empty file" $ null (archiveEntries $ testParser "")
     it "converts the file to UTF-8" $
       null (archiveEntries $ testParser "<===> いか\n") `shouldBe` False -- Haskell does not use UT8 by default
