@@ -1,49 +1,51 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module HRX.HRXSpec (spec) where
 
 import qualified Data.Text as T
-import HRX.Internal (Archive (..), Entry (..), pBoundary, pPath)
-import HRX.TestUtils (testParser)
+import HRX.Internal
+import HRX.TestUtils (testParse)
 import Test.Hspec
 import Test.Hspec.Megaparsec
-import Text.Megaparsec (runParser', runParserT, runParserT')
 
 spec :: Spec
 spec = parallel $ do
-  xdescribe "parse" $ do
-    it "parses an empty file" $ null (archiveEntries $ testParser "")
-    it "converts the file to UTF-8" $
-      null (archiveEntries $ testParser "<===> いか\n") `shouldBe` False -- Haskell does not use UT8 by default
-    it "requires the string to be UTF-8" $
-      null (archiveEntries $ testParser "<===> \xc3\x28\n") `shouldBe` False -- Haskell does not use UT8 by default
+  describe "parse" $ do
+    it "parses an empty file" $
+      testParse pArchive "" `parseSatisfies` (null . archiveEntries)
+    it "converts the file to UTF-8" $ -- Haskell does not use UT8 by default
+      testParse pArchive "<===> いか\n" `parseSatisfies` ((== 1) . length . archiveEntries)
+    it "requires the string to be UTF-8" $ -- Haskell does not use UT8 by default
+      testParse pArchive "<===> \xc3\x28\n" `parseSatisfies` ((== 1) . length . archiveEntries)
     it "parses contents without a newline" $
-      entryContent (head (archiveEntries $ testParser "<===> file\ncontents")) `shouldBe` "contents"
+      testParse pArchive "<===> file\ncontents" `parseSatisfies` ((== "contents") . entryContent . entryData . head . archiveEntries)
 
     describe "with a single file" $ do
-      let subject = testParser (T.unlines ["<===> file", "contents"])
+      let t p = p pArchive (T.unlines ["<===> file", "contents"])
 
-      it "parses one entry" $ length (archiveEntries subject) `shouldBe` 1
-      it "parses the filename" $ entryFile (head (archiveEntries subject)) `shouldBe` "file"
-      it "parses the contents" $ entryContent (head (archiveEntries subject)) `shouldBe` "contents\n"
+      it "parses one entry" $ t testParse `parseSatisfies` ((== 1) . length . archiveEntries)
+      it "parses the filename" $ t testParse `parseSatisfies` ((== "file") . entryFile . entryData . head . archiveEntries)
+      it "parses the contents" $ t testParse `parseSatisfies` ((== "contents\n") . entryContent . entryData . head . archiveEntries)
 
     describe "parses contents with boundary-like sequences" $ do
-      let subject = testParser (T.unlines ["<===> file", "<==>", "inline <===>", "<====>"])
+      let t p = p pArchive (T.unlines ["<===> file", "<==>", "inline <===>", "<====>"])
 
       it "parses the contents" $
-        entryContent (head $ archiveEntries subject) `shouldBe` T.unlines ["<==>", "inline <===>", "<====>"]
+        t testParse `parseSatisfies` ((== T.unlines ["<==>", "inline <===>", "<====>"]) . entryContent . entryData . head . archiveEntries)
 
     describe "with a comment" $ do
-      let subject = testParser (T.unlines ["<===>", "comment", "<===> file", "contents"])
+      let t p = p pArchive (T.unlines ["<===>", "comment", "<===> file", "contents"])
 
-      it "parses one entry" $ length (archiveEntries subject) `shouldBe` 1
-      it "parses the filename" $ entryFile (head (archiveEntries subject)) `shouldBe` "file"
-      it "parses the contents" $ entryContent (head (archiveEntries subject)) `shouldBe` "contents\n"
-      it "parses the comment" $ entryComment (head (archiveEntries subject)) `shouldBe` Just "comment"
+      it "parses one entry" $ t testParse `parseSatisfies` ((== 1) . length . archiveEntries)
+      it "parses the filename" $ t testParse `parseSatisfies` ((== "file") . entryFile . entryData . head . archiveEntries)
+      it "parses the contents" $ t testParse `parseSatisfies` ((== "contents\n") . entryContent . entryData . head . archiveEntries)
+      it "parses the comment" $ t testParse `parseSatisfies` ((== Just "comment") . entryComment . head . archiveEntries)
 
     describe "with multiple files" $ do
-      let subject = testParser (T.unlines ["<===> file 1", "contents 1", "<===> file 2", "contents 2"])
+      let t p = p pArchive (T.unlines ["<===> file 1", "contents 1", "<===> file 2", "contents 2"])
 
-      it "parses two entries" $ length (archiveEntries subject) `shouldBe` 2
-      it "parses the first filename" $ entryFile (head $ archiveEntries subject) `shouldBe` "file 1"
-      it "parses the first contents" $ entryContent (head $ archiveEntries subject) `shouldBe` "contents 1\n"
-      it "parses the second filename" $ entryFile (archiveEntries subject !! 1) `shouldBe` "file 2"
-      it "parses the second contents" $ entryContent (archiveEntries subject !! 1) `shouldBe` "contents 2\n"
+      it "parses two entries" $ t testParse `parseSatisfies` ((== 2) . length . archiveEntries)
+      it "parses the first filename" $ t testParse `parseSatisfies` ((== "file 1") . entryFile . entryData . head . archiveEntries)
+      it "parses the first contents" $ t testParse `parseSatisfies` ((== "contents 1\n") . entryContent . entryData . head . archiveEntries)
+      it "parses the second filename" $ t testParse `parseSatisfies` ((== "file 2") . entryFile . entryData . head . tail . archiveEntries)
+      it "parses the second contents" $ t testParse `parseSatisfies` ((== "contents 2\n") . entryContent . entryData . head . tail . archiveEntries)

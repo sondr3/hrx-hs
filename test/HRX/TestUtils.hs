@@ -1,16 +1,7 @@
 module HRX.TestUtils where
 
-import Data.Text (Text)
-import HRX.Internal (Archive, parse)
+import Text.Megaparsec (ParseErrorBundle, Parsec, parse)
 
--- | Parse a test case and return the parsed archive or throw a generic error.
-testParser :: Text -> Archive
-testParser input = case parse "" input of
-  Right archive -> archive
-  Left _ -> error "Could not parse input"
-
--- | Parse a test case and return either the archive or () if it failed.
-testParser' :: Text -> Either () Archive
-testParser' input = case parse "" input of
-  Right archive -> Right archive
-  Left _ -> Left ()
+-- | Test utility to run a parser on some input
+testParse :: Parsec e s a -> s -> Either (ParseErrorBundle s e) a
+testParse p = parse p ""
