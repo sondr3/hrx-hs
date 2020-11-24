@@ -30,12 +30,11 @@ common config
   build-depends:
     , base        ^>=4.14.1.0
     , megaparsec  ^>=9.0.1
-    , text        ^>=1.2.3.2
     , mtl         ^>=2.2.2
+    , text        ^>=1.2.3.2
 
 common library
-  build-depends:
-    , containers  ^>=0.6.2.1
+  build-depends: containers ^>=0.6.2.1
 
   if flag(dev)
     ghc-options: -O0 -Wall -Werror
@@ -74,7 +73,10 @@ test-suite hrx-hs-test
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Spec.hs
-  other-modules:      HRX.TestUtils
+  other-modules:
+    HRX.ParserSpec
+    HRX.TestUtils
+
   default-extensions: OverloadedStrings
   build-tool-depends: hspec-discover:hspec-discover ^>=2.7.4
   build-depends:
