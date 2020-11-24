@@ -4,21 +4,16 @@
 module HRX.Parser where
 
 import Control.Monad (void)
-import Control.Monad.Identity (Identity)
-import Control.Monad.State (State, StateT, evalState, get, put)
 import Data.Char (ord)
 import Data.List (intercalate)
-import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Void (Void)
-import Debug.Trace (trace)
+import Data.Text.Internal.Search (indices)
 import Text.Megaparsec hiding (State, parse)
-import Text.Megaparsec.Char (char, eol, string)
+import Text.Megaparsec.Char (eol, hspace1, string)
+import Text.Megaparsec.Debug (dbg)
 
-type Parser' = Parsec ParserError Text
-
-type Parser = ParsecT Void Text (State (Maybe Text))
+type Parser = Parsec ParserError Text
 
 showPosStack :: [String] -> String
 showPosStack = intercalate ", " . fmap ("in " ++)
@@ -39,10 +34,15 @@ data Archive = Archive
   deriving (Show, Eq)
 
 data Entry = Entry
-  { entryFile :: Text,
-    entryContent :: Text,
+  { entryBoundary :: Text,
+    entryData :: EntryType,
     entryComment :: Maybe Text
   }
+  deriving (Show, Eq)
+
+data EntryType
+  = EntryFile {entryFile :: Text, entryContent :: Text}
+  | EntryDirectory Text
   deriving (Show, Eq)
 
 isNewline :: Char -> Bool
@@ -65,84 +65,64 @@ isPathChar p =
   where
     chr = ord p
 
-pPathComponent :: Parser' Text
+pPathComponent :: Parser Text
 pPathComponent = do
   comp <- takeWhile1P Nothing isPathChar
   if valid comp then return comp else customFailure $ PathError comp
   where
     valid x = x /= "." && x /= ".."
 
-pSlash :: Parser' Text
+pSlash :: Parser Text
 pSlash = string "/" <* notFollowedBy (string "/")
 
-pPath :: Parser' Text
+pPath :: Parser Text
 pPath = do
-  -- path <- takeWhile1P (Just "path") isPathComponent <> takeWhile1P Nothing isPath
-  root <- pPathComponent
-  rest <- some (pSlash <|> pPathComponent) <* notFollowedBy (string "/")
+  root <- dbg "root" pPathComponent <?> "Path root"
+  rest <- dbg "rest" (many (pPathComponent <|> pSlash) <?> "Path rest")
   return $ root <> T.concat rest
 
 pBoundary :: Parser Text
-pBoundary = do
-  eqs <- char '<' *> takeWhile1P Nothing (== '=') <* char '>'
-  let boundary = "<" <> eqs <> ">"
-  archiveBoundary <- get
-  case archiveBoundary of
-    Nothing -> do
-      put (Just boundary)
-      void (trace (T.unpack boundary) (pure ()))
-      return boundary
-    Just w -> if boundary /= w then failure Nothing Set.empty else return w
+pBoundary = string "<" <> takeWhile1P Nothing (== '=') <> string ">"
 
 pComment :: Parser Text
 pComment = do
   void pBoundary
-  void $ char '\n'
-  takeWhile1P (Just "Comment") notNewline <* char '\n'
-
-pEntryContent :: Parser Text
-pEntryContent = do
-  archiveBoundary <- get
-  case archiveBoundary of
-    Nothing -> T.pack <$> many anySingle
-    -- Just b -> T.pack <$> manyTill anySingle (lookAhead (try (string b)))
-    -- Just b -> T.pack <$> manyTill anySingle (lookAhead (string b)) <?> "Entry content"
-    Just b -> T.pack <$> manyTill anySingle (lookAhead (string b <|> string ("\n" <> b)))
+  void eol
+  takeWhile1P (Just "Comment") notNewline <* eol
 
 pEntry :: Parser Entry
 pEntry = do
-  entryComment <- optional . try $ do pComment <?> "Entry comment"
-  void pBoundary <?> "Entry boundary"
-  void (char ' ' <?> "Boundary space")
-  entryFile <- takeWhile1P (Just "Entry filename") notNewline
-  void eol
-  entryContent <- pEntryContent
+  entryComment <- dbg "comment" $ optional . try $ pComment
+  entryBoundary <- dbg "boundary" pBoundary
+  void hspace1
+  path <- dbg "entry path" pPath <?> "Directory path"
+  if T.last path == '/'
+    then do
+      entryData <- pDirectory path
+      return Entry {entryComment, entryBoundary, entryData}
+    else do
+      entryData <- pFile entryBoundary path
+      return Entry {entryComment, entryBoundary, entryData}
 
-  return Entry {entryFile, entryContent, entryComment}
+pDirectory :: Text -> Parser EntryType
+pDirectory p = do
+  void $ some eol
+  return $ EntryDirectory p
+
+pFile :: Text -> Text -> Parser EntryType
+pFile b p = do
+  void eol
+  input <- getInput
+  let (entryContent, rest) = getContent input
+  setInput rest
+  return EntryFile {entryFile = p, entryContent}
+  where
+    getContent txt = case indices (b) txt of
+      [] -> (txt, "")
+      (x : _) -> T.splitAt x txt
 
 pArchive :: Parser Archive
 pArchive = do
-  archiveEntries <- many pEntry
-  archiveComment <- optional . try $ do pComment
+  archiveEntries <- dbg "entries" $ many pEntry
+  archiveComment <- dbg "archive comment" $ optional . try $ do pComment
   return Archive {archiveComment, archiveEntries}
-
-parse :: String -> Text -> Either ParserError Archive
-parse file input = case evalState (runParserT pArchive file input) Nothing of
-  Right archive -> Right archive
-  Left err -> do
-    trace (errorBundlePretty err) (pure ())
-    Left $ ParserError "Could not parse input"
-
--- | Internal testing tool to use since 'parseTest' doesn't work with state.
-parseTest' ::
-  ( Show a,
-    VisualStream s,
-    TraversableStream s,
-    ShowErrorComponent e
-  ) =>
-  ParsecT e s (StateT (Maybe m) Identity) a ->
-  s ->
-  IO ()
-parseTest' parser input = case evalState (runParserT parser "" input) Nothing of
-  Right x -> print x
-  Left err -> putStrLn $ errorBundlePretty err
