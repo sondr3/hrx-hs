@@ -5,13 +5,12 @@ module HRX.Parser where
 
 import Control.Monad (void)
 import Data.Char (ord)
+import Data.Functor (($>))
 import Data.List (intercalate)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Internal.Search (indices)
 import Text.Megaparsec hiding (State, parse)
 import Text.Megaparsec.Char (eol, hspace1, string)
-import Text.Megaparsec.Debug (dbg)
 
 type Parser = Parsec ParserError Text
 
@@ -41,7 +40,7 @@ data Entry = Entry
   deriving (Show, Eq)
 
 data EntryType
-  = EntryFile {entryFile :: Text, entryContent :: Text}
+  = EntryFile {entryFile :: Text, entryContent :: Maybe Text}
   | EntryDirectory Text
   deriving (Show, Eq)
 
@@ -50,9 +49,6 @@ isNewline x = x == '\n' || x == '\r'
 
 notNewline :: Char -> Bool
 notNewline = not . isNewline
-
-notBoundary :: Text -> Text -> Bool
-notBoundary b t = b /= t || ("\n" <> b) /= t
 
 isPathChar :: Char -> Bool
 isPathChar p =
@@ -65,6 +61,14 @@ isPathChar p =
   where
     chr = ord p
 
+pText :: Text -> Parser Text
+pText b = do
+  notFollowedBy (chunk b <|> eof $> "")
+  takeWhileP Nothing notNewline <> (eol $> "\n" <|> eof $> "") <?> "File body"
+
+pBody :: Text -> Parser Text
+pBody b = T.concat <$> some (pText b)
+
 pPathComponent :: Parser Text
 pPathComponent = do
   comp <- takeWhile1P Nothing isPathChar
@@ -73,35 +77,35 @@ pPathComponent = do
     valid x = x /= "." && x /= ".."
 
 pSlash :: Parser Text
-pSlash = string "/" <* notFollowedBy (string "/")
+pSlash = string "/" <* notFollowedBy (string "/") <?> "Slash"
 
 pPath :: Parser Text
 pPath = do
-  root <- dbg "root" pPathComponent <?> "Path root"
-  rest <- dbg "rest" (many (pPathComponent <|> pSlash) <?> "Path rest")
+  root <- pPathComponent <?> "Path root"
+  rest <- many (pPathComponent <|> pSlash) <?> "Path rest"
   return $ root <> T.concat rest
 
 pBoundary :: Parser Text
-pBoundary = string "<" <> takeWhile1P Nothing (== '=') <> string ">"
+pBoundary = string "<" <> takeWhile1P Nothing (== '=') <> string ">" <?> "Boundary"
 
 pComment :: Parser Text
 pComment = do
   void pBoundary
   void eol
-  takeWhile1P (Just "Comment") notNewline <* eol
+  takeWhile1P (Just "Comment") notNewline <* eol <?> "Comment"
 
 pEntry :: Parser Entry
 pEntry = do
-  entryComment <- dbg "comment" $ optional . try $ pComment
-  entryBoundary <- dbg "boundary" pBoundary
+  entryComment <- (optional . try $ pComment) <?> "Entry comment"
+  entryBoundary <- pBoundary <?> "Entry boundary"
   void hspace1
-  path <- dbg "entry path" pPath <?> "Directory path"
+  path <- pPath <?> "Directory path"
   if T.last path == '/'
     then do
-      entryData <- pDirectory path
+      entryData <- pDirectory path <?> "Directory"
       return Entry {entryComment, entryBoundary, entryData}
     else do
-      entryData <- pFile entryBoundary path
+      entryData <- pFile entryBoundary path <?> "File"
       return Entry {entryComment, entryBoundary, entryData}
 
 pDirectory :: Text -> Parser EntryType
@@ -112,17 +116,11 @@ pDirectory p = do
 pFile :: Text -> Text -> Parser EntryType
 pFile b p = do
   void eol
-  input <- getInput
-  let (entryContent, rest) = getContent input
-  setInput rest
+  entryContent <- optional (pBody b <?> "File content")
   return EntryFile {entryFile = p, entryContent}
-  where
-    getContent txt = case indices (b) txt of
-      [] -> (txt, "")
-      (x : _) -> T.splitAt x txt
 
 pArchive :: Parser Archive
 pArchive = do
-  archiveEntries <- dbg "entries" $ many pEntry
-  archiveComment <- dbg "archive comment" $ optional . try $ do pComment
+  archiveEntries <- many pEntry <?> "Entries"
+  archiveComment <- (optional . try $ pComment) <?> "Archive comment"
   return Archive {archiveComment, archiveEntries}
