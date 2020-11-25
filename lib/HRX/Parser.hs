@@ -6,16 +6,13 @@ module HRX.Parser where
 import Control.Monad (void)
 import Data.Char (ord)
 import Data.Functor (($>))
-import Data.List (intercalate)
+import Data.List (group, sort)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Text.Megaparsec hiding (State, parse)
 import Text.Megaparsec.Char (eol, hspace1, string)
 
 type Parser = Parsec ParserError Text
-
-showPosStack :: [String] -> String
-showPosStack = intercalate ", " . fmap ("in " ++)
 
 data ParserError
   = ParserError Text
@@ -43,6 +40,10 @@ data EntryType
   = EntryFile {entryFile :: Text, entryContent :: Maybe Text}
   | EntryDirectory Text
   deriving (Show, Eq)
+
+entryFileName :: EntryType -> Text
+entryFileName EntryFile {entryFile = n} = n
+entryFileName (EntryDirectory n) = n
 
 isNewline :: Char -> Bool
 isNewline x = x == '\n'
@@ -124,4 +125,13 @@ pArchive = do
   archiveEntries <- many (try pEntry) <?> "Entries"
   archiveComment <- (optional . try $ pComment) <?> "Archive comment"
   void eof
-  return Archive {archiveComment, archiveEntries}
+  let archive = Archive {archiveComment, archiveEntries}
+  if validateArchive archive
+    then return archive
+    else customFailure $ ParserError "Duplicate file/directory"
+
+validateArchive :: Archive -> Bool
+validateArchive archive = validNames (fileNames archive)
+  where
+    validNames = all (null . tail) . group . sort
+    fileNames a = map (entryFileName . entryData) (archiveEntries a)

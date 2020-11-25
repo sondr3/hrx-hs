@@ -99,3 +99,24 @@ spec = parallel $ do
     it "starts with an unopened boundary" $ testParse pArchive `shouldFailOn` "==> file\n"
     it "starts with a malformed boundary" $ testParse pArchive `shouldFailOn` "<> file\n"
     it "has a directory with contents" $ testParse pArchive `shouldFailOn` "<===> dir/\ncontents"
+
+    it "has duplicate files" $ testParse pArchive `shouldFailOn` "<=> file\n<=> file\n"
+    it "has duplicate directories" $ testParse pArchive `shouldFailOn` "<=> dir/\n<=> dir/\n"
+    it "has file with the same name as a directory" $ testParse pArchive `shouldFailOn` "<=> foo/\n<=> foo\n"
+    it "has file with the same name as an earlier implicit directory" $ testParse pArchive `shouldFailOn` "<=> foo/bar\n<=> foo\n"
+    it "has file with the same name as a later implicit directory" $ testParse pArchive `shouldFailOn` "<=> foo\n<=> foo/bar\n"
+
+    describe "has a boundary that" $ do
+      it "isn't followed by a space" $ testParse pArchive `shouldFailOn` "<=>file\n"
+      it "isn't followed by a path" $ testParse pArchive `shouldFailOn` "<=> \n"
+      it "has a file without a newline" $ testParse pArchive `shouldFailOn` "<=> file"
+
+    describe "has a middle boundary that" $ do
+      it "isn't followed by a space" $ testParse pArchive `shouldFailOn` "<=> file 1\n<=>file 2\n"
+      it "isn't followed by a path" $ testParse pArchive `shouldFailOn` "<=> file 1\n<=> \n"
+      it "has a file without a newline" $ testParse pArchive `shouldFailOn` "<=> file 1\n<=> file"
+
+    describe "has multiple comments that" $ do
+      it "come before a file" $ testParse pArchive `shouldFailOn` T.unlines ["<=>", "comment 1", "<=>", "comment 2", "<=> file"]
+      it "come after a file" $ testParse pArchive `shouldFailOn` T.unlines ["<=> file", "<=>", "comment 1", "<=>", "comment 2"]
+      it "appear on their own" $ testParse pArchive `shouldFailOn` T.unlines ["<=>", "comment 1", "<=>", "comment 2"]
