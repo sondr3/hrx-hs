@@ -45,7 +45,7 @@ data EntryType
   deriving (Show, Eq)
 
 isNewline :: Char -> Bool
-isNewline x = x == '\n' || x == '\r'
+isNewline x = x == '\n'
 
 notNewline :: Char -> Bool
 notNewline = not . isNewline
@@ -90,9 +90,9 @@ pBoundary = string "<" <> takeWhile1P Nothing (== '=') <> string ">" <?> "Bounda
 
 pComment :: Parser Text
 pComment = do
-  void pBoundary
+  b <- pBoundary
   void eol
-  takeWhile1P (Just "Comment") notNewline <* eol <?> "Comment"
+  pBody b
 
 pEntry :: Parser Entry
 pEntry = do
@@ -121,6 +121,7 @@ pFile b p = do
 
 pArchive :: Parser Archive
 pArchive = do
-  archiveEntries <- many pEntry <?> "Entries"
+  archiveEntries <- many (try pEntry) <?> "Entries"
   archiveComment <- (optional . try $ pComment) <?> "Archive comment"
+  void eof
   return Archive {archiveComment, archiveEntries}
