@@ -23,10 +23,16 @@ instance ShowErrorComponent ParserError where
   showErrorComponent (PathError e) = T.unpack e ++ " is not a valid path"
 
 data Archive = Archive
-  { archiveComment :: Maybe Text,
-    archiveEntries :: [Entry]
+  { archiveBoundary :: Int,
+    archiveComment :: Maybe Text,
+    archiveEntries :: [(Path, Entry)]
   }
   deriving (Show, Eq)
+
+newtype Path = Path Text deriving (Show, Eq, Ord)
+
+isDir :: Path -> Bool
+isDir (Path path) = T.last path == '/'
 
 data Entry = Entry
   { entryBoundary :: Text,
@@ -36,13 +42,9 @@ data Entry = Entry
   deriving (Show, Eq)
 
 data EntryType
-  = EntryFile {entryFile :: Text, entryContent :: Maybe Text}
-  | EntryDirectory {entryDir :: Text}
+  = EntryFile {entryContent :: Maybe Text}
+  | EntryDirectory
   deriving (Show, Eq)
-
-entryFileName :: EntryType -> Text
-entryFileName EntryFile {entryFile} = entryFile
-entryFileName EntryDirectory {entryDir} = entryDir
 
 getEntries :: [EntryType] -> ([EntryType], [EntryType])
 getEntries ents = entries' ents ([], [])
@@ -86,11 +88,11 @@ pPathComponent = do
 pSlash :: Parser Text
 pSlash = string "/" <* notFollowedBy (string "/") <?> "Slash"
 
-pPath :: Parser Text
+pPath :: Parser Path
 pPath = do
   root <- pPathComponent <?> "Path root"
   rest <- many (pPathComponent <|> pSlash) <?> "Path rest"
-  return $ root <> T.concat rest
+  return $ Path (root <> T.concat rest)
 
 pBoundary :: Parser Text
 pBoundary = string "<" <> takeWhile1P Nothing (== '=') <> string ">" <?> "Boundary"
@@ -101,37 +103,33 @@ pComment = do
   void eol
   pBody b
 
-pEntry :: Parser Entry
+pEntry :: Parser (Path, Entry)
 pEntry = do
   entryComment <- (optional . try $ pComment) <?> "Entry comment"
   entryBoundary <- pBoundary <?> "Entry boundary"
   void hspace1
   path <- pPath <?> "Directory path"
-  if T.last path == '/'
+  if isDir path
     then do
-      entryData <- pDirectory path <?> "Directory"
-      return Entry {entryComment, entryBoundary, entryData}
+      void (some eol <?> "Directory")
+      -- entryData <- pDirectory <?> "Directory"
+      return (path, Entry {entryComment, entryBoundary, entryData = EntryDirectory})
     else do
-      entryData <- pFile entryBoundary path <?> "File"
-      return Entry {entryComment, entryBoundary, entryData}
+      entryData <- pFile entryBoundary <?> "File"
+      return (path, Entry {entryComment, entryBoundary, entryData})
 
-pDirectory :: Text -> Parser EntryType
-pDirectory p = do
-  void $ some eol
-  return $ EntryDirectory p
-
-pFile :: Text -> Text -> Parser EntryType
-pFile b p = do
+pFile :: Text -> Parser EntryType
+pFile b = do
   void eol
   entryContent <- optional (pBody b <?> "File content")
-  return EntryFile {entryFile = p, entryContent}
+  return EntryFile {entryContent}
 
 pArchive :: Parser Archive
 pArchive = do
   archiveEntries <- many (try pEntry) <?> "Entries"
   archiveComment <- (optional . try $ pComment) <?> "Archive comment"
   void eof <?> "End of archive"
-  let archive = Archive {archiveComment, archiveEntries}
+  let archive = Archive {archiveBoundary = 0, archiveComment, archiveEntries}
   if validArchive archive
     then return archive
     else customFailure $ ParserError "Duplicate file/directory"

@@ -1,7 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module HRX.ParserSpec (spec) where
 
-import HRX.Internal (isPathChar, pPath)
-import Test.Hspec
+import HRX.Internal (Path (Path), isPathChar, pPath)
+import Test.Hspec (Spec, describe, it, parallel, shouldBe)
 import Test.Hspec.Megaparsec
 import Text.Megaparsec (parse)
 
@@ -15,8 +17,8 @@ spec = parallel $ do
 
   describe "parses path" $ do
     it "parses" $ do
-      parse pPath "" "dir/file1" `shouldParse` "dir/file1"
-      parse pPath "" "path/to/file2" `shouldParse` "path/to/file2"
+      parse pPath "" "dir/file1" `parseSatisfies` (== Path "dir/file1")
+      parse pPath "" "path/to/file2" `parseSatisfies` (== Path "path/to/file2")
     it "fails" $ do
       parse pPath "" `shouldFailOn` "/file"
       parse pPath "" `shouldFailOn` "dir//file"
