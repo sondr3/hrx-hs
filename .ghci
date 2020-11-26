@@ -1,3 +1,4 @@
 :set -XOverloadedStrings
 import Text.Megaparsec
-import Data.Text as T
+import qualified Data.Text as T
+import qualified Data.List as L
