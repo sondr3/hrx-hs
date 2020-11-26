@@ -16,16 +16,23 @@ type Parser = Parsec ParserError Text
 data ParserError
   = ParserError Text
   | PathError Text
+  | BoundaryWidthError
+  | DuplicateFileError Text
   deriving (Show, Eq, Ord)
 
 instance ShowErrorComponent ParserError where
   showErrorComponent (ParserError e) = T.unpack e
   showErrorComponent (PathError e) = T.unpack e ++ " is not a valid path"
+  showErrorComponent BoundaryWidthError = "Boundary did not match first boundary in archive"
+  showErrorComponent (DuplicateFileError e) = T.unpack e ++ " defined twice"
 
 data Archive = Archive
-  { archiveBoundary :: Int,
-    archiveComment :: Maybe Text,
-    archiveEntries :: [(Path, Entry)]
+  { -- | Width of boundary in `=`
+    archiveBoundary :: Int,
+    -- | Entries in the file
+    archiveEntries :: [(Path, Entry)],
+    -- | Optional final comment
+    archiveComment :: Maybe Text
   }
   deriving (Show, Eq)
 
@@ -35,8 +42,7 @@ isDir :: Path -> Bool
 isDir (Path path) = T.last path == '/'
 
 data Entry = Entry
-  { entryBoundary :: Text,
-    entryData :: EntryType,
+  { entryData :: EntryType,
     entryComment :: Maybe Text
   }
   deriving (Show, Eq)
@@ -97,26 +103,31 @@ pPath = do
 pBoundary :: Parser Text
 pBoundary = string "<" <> takeWhile1P Nothing (== '=') <> string ">" <?> "Boundary"
 
-pComment :: Parser Text
-pComment = do
-  b <- pBoundary
-  void eol
-  pBody b
-
-pEntry :: Parser (Path, Entry)
-pEntry = do
-  entryComment <- (optional . try $ pComment) <?> "Entry comment"
-  entryBoundary <- pBoundary <?> "Entry boundary"
-  void hspace1
-  path <- pPath <?> "Directory path"
-  if isDir path
-    then do
-      void (some eol <?> "Directory")
-      -- entryData <- pDirectory <?> "Directory"
-      return (path, Entry {entryComment, entryBoundary, entryData = EntryDirectory})
+pComment :: Text -> Parser Text
+pComment b = do
+  bC <- pBoundary
+  if bC /= b
+    then customFailure BoundaryWidthError
     else do
-      entryData <- pFile entryBoundary <?> "File"
-      return (path, Entry {entryComment, entryBoundary, entryData})
+      void eol
+      pBody bC
+
+pEntry :: Text -> Parser (Path, Entry)
+pEntry b = do
+  entryComment <- (optional . try $ pComment b) <?> "Entry comment"
+  entryBoundary <- pBoundary <?> "Entry boundary"
+  if entryBoundary /= b
+    then customFailure BoundaryWidthError
+    else do
+      void hspace1
+      path <- pPath <?> "Directory path"
+      if isDir path
+        then do
+          void (some eol <?> "Directory")
+          return (path, Entry {entryComment, entryData = EntryDirectory})
+        else do
+          entryData <- pFile entryBoundary <?> "File"
+          return (path, Entry {entryComment, entryData})
 
 pFile :: Text -> Parser EntryType
 pFile b = do
@@ -126,10 +137,11 @@ pFile b = do
 
 pArchive :: Parser Archive
 pArchive = do
-  archiveEntries <- many (try pEntry) <?> "Entries"
-  archiveComment <- (optional . try $ pComment) <?> "Archive comment"
+  b <- lookAhead pBoundary <|> eof $> ""
+  archiveEntries <- many (try $ pEntry b) <?> "Entries"
+  archiveComment <- (optional . try $ pComment b) <?> "Archive comment"
   void eof <?> "End of archive"
-  let archive = Archive {archiveBoundary = 0, archiveComment, archiveEntries}
+  let archive = Archive {archiveBoundary = T.length b - 2, archiveComment, archiveEntries}
   if validArchive archive
     then return archive
     else customFailure $ ParserError "Duplicate file/directory"
