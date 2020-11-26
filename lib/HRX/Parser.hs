@@ -6,6 +6,7 @@ module HRX.Parser where
 import Control.Monad (void)
 import Data.Char (ord)
 import Data.Functor (($>))
+import Data.List (nub)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Text.Megaparsec hiding (State, parse)
@@ -147,4 +148,6 @@ pArchive = do
     else customFailure $ ParserError "Duplicate file/directory"
 
 validArchive :: Archive -> Bool
-validArchive archive = True
+validArchive archive = length (nub paths) == length paths
+  where
+    paths = map fst (archiveEntries archive)
