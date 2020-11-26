@@ -73,50 +73,52 @@ spec = parallel $ do
         it "parses the second contents" $ t testParse `parseSatisfies` ((== Just "contents 2\n") . entryContent . entryData . last . archiveEntries)
         it "parses the comment" $ t testParse `parseSatisfies` ((== Just "comment\n") . entryComment . last . archiveEntries)
 
-  it "parses a file that only contains a comment" $
-    testParse pArchive (T.unlines ["<===>", "contents"]) `parseSatisfies` ((== Just "contents\n") . archiveComment)
+    it "parses a file that only contains a comment" $
+      testParse pArchive (T.unlines ["<===>", "contents"]) `parseSatisfies` ((== Just "contents\n") . archiveComment)
 
-  it "parses a file that only contains a comment with boundary-like sequences" $
-    testParse pArchive (T.unlines ["<===>", "<==>", "inline <===>", "<====>"]) `parseSatisfies` ((== Just (T.unlines ["<==>", "inline <===>", "<====>"])) . archiveComment)
+    it "parses a file that only contains a comment with boundary-like sequences" $
+      testParse pArchive (T.unlines ["<===>", "<==>", "inline <===>", "<====>"]) `parseSatisfies` ((== Just (T.unlines ["<==>", "inline <===>", "<====>"])) . archiveComment)
 
-  describe "with a file and a trailing comment" $ do
-    let t p = p pArchive (T.unlines ["<===> file", "contents", "", "<===>", "comment"])
+    describe "with a file and a trailing comment" $ do
+      let t p = p pArchive (T.unlines ["<===> file", "contents", "", "<===>", "comment"])
 
-    it "parses one entry" $ t testParse `parseSatisfies` ((== 1) . length . archiveEntries)
-    it "parses the filename" $ t testParse `parseSatisfies` ((== "file") . entryFile . entryData . head . archiveEntries)
-    it "parses the contents" $ t testParse `parseSatisfies` ((== Just "contents\n\n") . entryContent . entryData . head . archiveEntries)
-    it "parses the comment" $ t testParse `parseSatisfies` ((== Just "comment\n") . archiveComment)
+      it "parses one entry" $ t testParse `parseSatisfies` ((== 1) . length . archiveEntries)
+      it "parses the filename" $ t testParse `parseSatisfies` ((== "file") . entryFile . entryData . head . archiveEntries)
+      it "parses the contents" $ t testParse `parseSatisfies` ((== Just "contents\n\n") . entryContent . entryData . head . archiveEntries)
+      it "parses the comment" $ t testParse `parseSatisfies` ((== Just "comment\n") . archiveComment)
 
-  describe "with a single directory" $ do
-    let t p = p pArchive "<===> dir/\n"
+    describe "with a single directory" $ do
+      let t p = p pArchive "<===> dir/\n"
 
-    it "parses one entry" $ t testParse `parseSatisfies` ((== 1) . length . archiveEntries)
-    it "parses a diretory and the filename" $ t testParse `parseSatisfies` ((== EntryDirectory "dir/") . entryData . head . archiveEntries)
+      it "parses one entry" $ t testParse `parseSatisfies` ((== 1) . length . archiveEntries)
+      it "parses a diretory and the filename" $ t testParse `parseSatisfies` ((== EntryDirectory "dir/") . entryData . head . archiveEntries)
 
-  describe "forbids an HRX file that" $ do
-    it "doesn't start with a boundary" $ testParse pArchive `shouldFailOn` "file\n"
-    it "starts with an unclosed boundary" $ testParse pArchive `shouldFailOn` "<== file\n"
-    it "starts with an unopened boundary" $ testParse pArchive `shouldFailOn` "==> file\n"
-    it "starts with a malformed boundary" $ testParse pArchive `shouldFailOn` "<> file\n"
-    it "has a directory with contents" $ testParse pArchive `shouldFailOn` "<===> dir/\ncontents"
+    describe "forbids an HRX file that" $ do
+      it "doesn't start with a boundary" $ testParse pArchive `shouldFailOn` "file\n"
+      it "starts with an unclosed boundary" $ testParse pArchive `shouldFailOn` "<== file\n"
+      it "starts with an unopened boundary" $ testParse pArchive `shouldFailOn` "==> file\n"
+      it "starts with a malformed boundary" $ testParse pArchive `shouldFailOn` "<> file\n"
+      it "has a directory with contents" $ testParse pArchive `shouldFailOn` "<===> dir/\ncontents"
 
-    it "has duplicate files" $ testParse pArchive `shouldFailOn` "<=> file\n<=> file\n"
-    it "has duplicate directories" $ testParse pArchive `shouldFailOn` "<=> dir/\n<=> dir/\n"
-    it "has file with the same name as a directory" $ testParse pArchive `shouldFailOn` "<=> foo/\n<=> foo\n"
-    it "has file with the same name as an earlier implicit directory" $ testParse pArchive `shouldFailOn` "<=> foo/bar\n<=> foo\n"
-    it "has file with the same name as a later implicit directory" $ testParse pArchive `shouldFailOn` "<=> foo\n<=> foo/bar\n"
+      it "has duplicate files" $ testParse pArchive `shouldFailOn` "<=> file\n<=> file\n"
+      it "has duplicate directories" $ testParse pArchive `shouldFailOn` "<=> dir/\n<=> dir/\n"
 
-    describe "has a boundary that" $ do
-      it "isn't followed by a space" $ testParse pArchive `shouldFailOn` "<=>file\n"
-      it "isn't followed by a path" $ testParse pArchive `shouldFailOn` "<=> \n"
-      it "has a file without a newline" $ testParse pArchive `shouldFailOn` "<=> file"
+      describe "has file with the same name as" $ do
+        it "a directory" $ testParse pArchive `shouldFailOn` "<=> foo/\n<=> foo\n"
+        it "an earlier implicit directory" $ testParse pArchive `shouldFailOn` "<=> foo/bar\n<=> foo\n"
+        it "a later implicit directory" $ testParse pArchive `shouldFailOn` "<=> foo\n<=> foo/bar\n"
 
-    describe "has a middle boundary that" $ do
-      it "isn't followed by a space" $ testParse pArchive `shouldFailOn` "<=> file 1\n<=>file 2\n"
-      it "isn't followed by a path" $ testParse pArchive `shouldFailOn` "<=> file 1\n<=> \n"
-      it "has a file without a newline" $ testParse pArchive `shouldFailOn` "<=> file 1\n<=> file"
+      describe "has a boundary that" $ do
+        it "isn't followed by a space" $ testParse pArchive `shouldFailOn` "<=>file\n"
+        it "isn't followed by a path" $ testParse pArchive `shouldFailOn` "<=> \n"
+        it "has a file without a newline" $ testParse pArchive `shouldFailOn` "<=> file"
 
-    describe "has multiple comments that" $ do
-      it "come before a file" $ testParse pArchive `shouldFailOn` T.unlines ["<=>", "comment 1", "<=>", "comment 2", "<=> file"]
-      it "come after a file" $ testParse pArchive `shouldFailOn` T.unlines ["<=> file", "<=>", "comment 1", "<=>", "comment 2"]
-      it "appear on their own" $ testParse pArchive `shouldFailOn` T.unlines ["<=>", "comment 1", "<=>", "comment 2"]
+      describe "has a middle boundary that" $ do
+        it "isn't followed by a space" $ testParse pArchive `shouldFailOn` "<=> file 1\n<=>file 2\n"
+        it "isn't followed by a path" $ testParse pArchive `shouldFailOn` "<=> file 1\n<=> \n"
+        it "has a file without a newline" $ testParse pArchive `shouldFailOn` "<=> file 1\n<=> file"
+
+      describe "has multiple comments that" $ do
+        it "come before a file" $ testParse pArchive `shouldFailOn` T.unlines ["<=>", "comment 1", "<=>", "comment 2", "<=> file"]
+        it "come after a file" $ testParse pArchive `shouldFailOn` T.unlines ["<=> file", "<=>", "comment 1", "<=>", "comment 2"]
+        it "appear on their own" $ testParse pArchive `shouldFailOn` T.unlines ["<=>", "comment 1", "<=>", "comment 2"]
