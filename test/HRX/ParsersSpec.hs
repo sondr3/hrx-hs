@@ -20,3 +20,11 @@ spec = parallel $ do
     it "fails" $ do
       parse pPath "" `shouldFailOn` "/file"
       parse pPath "" `shouldFailOn` "dir//file"
+      parse pPath "" `shouldFailOn` "dir//"
+      parse pPath "" `shouldFailOn` "."
+      parse pPath "" `shouldFailOn` ".."
+      parse pPath "" `shouldFailOn` "dir/./file"
+      parse pPath "" `shouldFailOn` "dir/../file"
+      parse pPath "" `shouldFailOn` "dir\file"
+      parse pPath "" `shouldFailOn` "\"\""
+      parse pPath "" `shouldFailOn` "C:/file"
