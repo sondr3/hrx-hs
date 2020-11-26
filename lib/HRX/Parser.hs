@@ -6,7 +6,6 @@ module HRX.Parser where
 import Control.Monad (void)
 import Data.Char (ord)
 import Data.Functor (($>))
-import Data.List (group, sort)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Text.Megaparsec hiding (State, parse)
@@ -20,7 +19,7 @@ data ParserError
   deriving (Show, Eq, Ord)
 
 instance ShowErrorComponent ParserError where
-  showErrorComponent (ParserError e) = T.unpack e ++ "generic error happened"
+  showErrorComponent (ParserError e) = T.unpack e
   showErrorComponent (PathError e) = T.unpack e ++ " is not a valid path"
 
 data Archive = Archive
@@ -38,12 +37,19 @@ data Entry = Entry
 
 data EntryType
   = EntryFile {entryFile :: Text, entryContent :: Maybe Text}
-  | EntryDirectory Text
+  | EntryDirectory {entryDir :: Text}
   deriving (Show, Eq)
 
 entryFileName :: EntryType -> Text
-entryFileName EntryFile {entryFile = n} = n
-entryFileName (EntryDirectory n) = n
+entryFileName EntryFile {entryFile} = entryFile
+entryFileName EntryDirectory {entryDir} = entryDir
+
+getEntries :: [EntryType] -> ([EntryType], [EntryType])
+getEntries ents = entries' ents ([], [])
+  where
+    entries' (e@EntryDirectory {} : es) (dirs, files) = entries' es (e : dirs, files)
+    entries' (e@EntryFile {} : es) (dirs, files) = entries' es (dirs, e : files)
+    entries' [] (d, f) = (d, f)
 
 isNewline :: Char -> Bool
 isNewline x = x == '\n'
@@ -65,7 +71,7 @@ isPathChar p =
 pText :: Text -> Parser Text
 pText b = do
   notFollowedBy (chunk b <|> eof $> "")
-  takeWhileP Nothing notNewline <> (eol $> "\n" <|> eof $> "") <?> "File body"
+  takeWhileP Nothing notNewline <> (eol <|> eof $> "") <?> "File body"
 
 pBody :: Text -> Parser Text
 pBody b = T.concat <$> some (pText b)
@@ -124,14 +130,11 @@ pArchive :: Parser Archive
 pArchive = do
   archiveEntries <- many (try pEntry) <?> "Entries"
   archiveComment <- (optional . try $ pComment) <?> "Archive comment"
-  void eof
+  void eof <?> "End of archive"
   let archive = Archive {archiveComment, archiveEntries}
-  if validateArchive archive
+  if validArchive archive
     then return archive
     else customFailure $ ParserError "Duplicate file/directory"
 
-validateArchive :: Archive -> Bool
-validateArchive archive = validNames (fileNames archive)
-  where
-    validNames = all (null . tail) . group . sort
-    fileNames a = map (entryFileName . entryData) (archiveEntries a)
+validArchive :: Archive -> Bool
+validArchive archive = True
