@@ -80,7 +80,7 @@ isPathChar p =
 pText :: Text -> Parser Text
 pText b = do
   notFollowedBy (chunk b <|> eof $> "")
-  takeWhileP Nothing notNewline <> (eol <|> eof $> "") <?> "File body"
+  eol <|> takeWhileP Nothing notNewline <> (eol <|> eof $> "") <?> "File body"
 
 pBody :: Text -> Parser Text
 pBody b = T.concat <$> some (pText b)
