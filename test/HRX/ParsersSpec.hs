@@ -1,5 +1,6 @@
 module HRX.ParsersSpec (spec) where
 
+import qualified Data.Text as T
 import HRX.Internal (Path (Path), isPathChar, pPath)
 import Test.Hspec (Spec, describe, it, parallel, shouldBe)
 import Test.Hspec.Megaparsec
@@ -15,16 +16,16 @@ spec = parallel $ do
 
   describe "parses path" $ do
     it "parses" $ do
-      parse pPath "" "dir/file1" `parseSatisfies` (== Path "dir/file1")
-      parse pPath "" "path/to/file2" `parseSatisfies` (== Path "path/to/file2")
+      parse pPath "" "dir/file1\n" `parseSatisfies` (== Path "dir/file1")
+      parse pPath "" "path/to/file2\n" `parseSatisfies` (== Path "path/to/file2")
     it "fails" $ do
-      parse pPath "" `shouldFailOn` "/file"
-      parse pPath "" `shouldFailOn` "dir//file"
-      parse pPath "" `shouldFailOn` "dir//"
-      parse pPath "" `shouldFailOn` "."
-      parse pPath "" `shouldFailOn` ".."
-      parse pPath "" `shouldFailOn` "dir/./file"
-      parse pPath "" `shouldFailOn` "dir/../file"
-      parse pPath "" `shouldFailOn` "dir\file"
-      parse pPath "" `shouldFailOn` "\"\""
-      parse pPath "" `shouldFailOn` "C:/file"
+      parse pPath "" `shouldFailOn` "/file\n"
+      parse pPath "" `shouldFailOn` "dir//file\n"
+      parse pPath "" `shouldFailOn` "dir//\n"
+      parse pPath "" `shouldFailOn` ".\n"
+      parse pPath "" `shouldFailOn` "..\n"
+      parse pPath "" `shouldFailOn` "dir/./file\n"
+      parse pPath "" `shouldFailOn` "dir/../file\n"
+      parse pPath "" `shouldFailOn` "dir\file\n"
+      parse pPath "" `shouldFailOn` T.pack ['"', '"']
+      parse pPath "" `shouldFailOn` "C:/file\n"

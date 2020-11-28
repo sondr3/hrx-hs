@@ -99,6 +99,7 @@ pPath :: Parser Path
 pPath = do
   root <- pPathComponent <?> "Path root"
   rest <- many (pPathComponent <|> pSlash) <?> "Path rest"
+  void eol
   return $ Path (root <> T.concat rest)
 
 pBoundary :: Parser Text
@@ -124,7 +125,7 @@ pEntry b = do
       path <- pPath <?> "Directory path"
       if isDir path
         then do
-          void (some eol <?> "Directory")
+          void (many eol <?> "Directory")
           return (path, Entry {entryComment, entryData = EntryDirectory})
         else do
           entryData <- pFile entryBoundary <?> "File"
@@ -132,7 +133,6 @@ pEntry b = do
 
 pFile :: Text -> Parser EntryType
 pFile b = do
-  void eol
   entryContent <- optional (pBody b <?> "File content")
   return EntryFile {entryContent}
 

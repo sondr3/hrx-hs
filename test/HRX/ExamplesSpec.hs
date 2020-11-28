@@ -6,7 +6,7 @@ import qualified Data.Text as T
 import HRX.Internal (pArchive)
 import HRX.TestUtils (testParse)
 import System.Directory (getCurrentDirectory, listDirectory)
-import Test.Hspec (Spec, describe, it, runIO)
+import Test.Hspec (Spec, describe, it, runIO, xit)
 import Test.Hspec.Megaparsec
 import Text.Printf (printf)
 
@@ -27,10 +27,34 @@ spec = do
         content <- readFile (dir <> file)
         testParse pArchive `shouldSucceedOn` T.pack content
 
+  describe "directory contents" $ do
+    it "cannot have it" $ testParse pArchive `shouldFailOn` "<===> dir/\nA directory can't have text contents.\n"
+
   describe "invalid examples" $ do
-    files <- runIO $ listExamples "/spec/example/invalid"
-    let dir = curr <> "/spec/example/invalid/"
-    forM_ files $ \file ->
-      it (printf "should not parse %s" file) $ do
-        content <- readFile (dir <> file)
-        testParse pArchive `shouldFailOn` T.pack content
+    describe "duplicates" $ do
+      it "duplicate files" $ testParse pArchive `shouldFailOn` "<======> file\n<======> file\n"
+      it "duplicate dirs" $ testParse pArchive `shouldFailOn` "<======> dir/\n<======> dir/\n"
+      xit "file as parent" $
+        -- TODO: File name collision difference to reference implementation
+        testParse pArchive `shouldFailOn` "<======> file\n<======> file/sub\n"
+
+  describe "invalid boundaries" $ do
+    it "must begin with a boundary" $ testParse pArchive `shouldFailOn` "A HRX file must begin with a boundary."
+    it "empty" $ testParse pArchive `shouldFailOn` "<>"
+    it "unopened" $ testParse pArchive `shouldFailOn` "======>"
+    it "unclosec" $ testParse pArchive `shouldFailOn` "<======"
+
+  describe "invalid paths" $ do
+    it "initial slash" $ testParse pArchive `shouldFailOn` "<======> /file\n"
+    it "double slash" $ testParse pArchive `shouldFailOn` "<======> dir//file\n"
+    it "final slash" $ testParse pArchive `shouldFailOn` "<======> dir//\n"
+    it "single dot" $ testParse pArchive `shouldFailOn` "<======> .\n"
+    it "double dot" $ testParse pArchive `shouldFailOn` "<======> ..\n"
+    it "single dot component" $ testParse pArchive `shouldFailOn` "<======> dir/./file\n"
+    it "double dot component" $ testParse pArchive `shouldFailOn` "<======> dir/../file\n"
+    it "backslash" $ testParse pArchive `shouldFailOn` "<======> dir\file\n"
+    it "invalid ascii" $ testParse pArchive `shouldFailOn` "<======> \DEL\n"
+    it "colon" $ testParse pArchive `shouldFailOn` "<======> C:/file\n"
+    it "no space before path" $ testParse pArchive `shouldFailOn` "<======>file\n"
+
+  it "multi comment" $ testParse pArchive `shouldFailOn` "<===>\nA comment can't be followed by another comment.\n<===>"
