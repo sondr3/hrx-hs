@@ -3,17 +3,19 @@ module HRX.Internal
     writeArchive,
     toHRX,
     fromHRX,
+    entriesGlob,
     module HRX.Parser,
   )
 where
 
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import HRX.Parser
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (takeDirectory)
+import System.FilePattern (FilePattern, (?==))
 import Text.Megaparsec (ParseErrorBundle)
 import qualified Text.Megaparsec as M
 
@@ -26,11 +28,6 @@ readArchive path = do
 
 writeArchive :: Archive -> FilePath -> IO ()
 writeArchive archive path = createAndWriteFile path (toHRX archive)
-
-createAndWriteFile :: FilePath -> Text -> IO ()
-createAndWriteFile path content = do
-  createDirectoryIfMissing True $ takeDirectory path
-  TIO.writeFile path content
 
 fromHRX :: Text -> Either ParserError Archive
 fromHRX content = do
@@ -45,6 +42,9 @@ toHRX archive =
       <> [printComment (archiveComment archive) boundary]
   where
     boundary = "<" <> T.replicate (archiveBoundary archive) "=" <> ">"
+
+entriesGlob :: FilePattern -> Archive -> [Entry]
+entriesGlob glob archive = mapMaybe (entryGlob glob) (archiveEntries archive)
 
 printEntry :: Path -> Entry -> Text -> Text
 printEntry p (Entry (EntryFile content) comment) b = printComment comment b <> printFile p content b
@@ -63,7 +63,15 @@ printComment (Just comment) b = b <> "\n" <> comment
 printPath :: Path -> Text
 printPath (Path p) = p
 
+entryGlob :: FilePattern -> (Path, Entry) -> Maybe Entry
+entryGlob glob (Path path, entry) = if glob ?== T.unpack path then Just entry else Nothing
+
 parse :: FilePath -> Text -> Either (ParseErrorBundle Text ParserError) Archive
 parse path input = case M.parse pArchive path input of
   Right archive -> Right archive
   Left err -> Left err
+
+createAndWriteFile :: FilePath -> Text -> IO ()
+createAndWriteFile path content = do
+  createDirectoryIfMissing True $ takeDirectory path
+  TIO.writeFile path content
