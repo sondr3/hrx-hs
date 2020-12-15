@@ -3,7 +3,9 @@ module HRX
     Archive (..),
     Entry (..),
     EntryType (..),
-    Path (..),
+
+    -- * Pure functions for working with HRX archives
+    findEntriesGlob,
 
     -- * IO functions to read/write archives and entries
     readArchive,
@@ -19,7 +21,7 @@ import HRX.Internal
   ( Archive (..),
     Entry (..),
     EntryType (..),
-    Path (..),
+    findEntriesGlob,
     fromHRX,
     readArchive,
     toHRX,
