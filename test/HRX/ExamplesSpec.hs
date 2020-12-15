@@ -28,7 +28,8 @@ spec = do
         testParse pArchive `shouldSucceedOn` content
 
   describe "valid examples output match" $ do
-    input <- runIO $ listExamples "/spec/example"
+    -- Ignore a single file due to newlines between boundaries not making it a 1-to-1 deserialization
+    input <- runIO $ filter (/= "directory.hrx") <$> listExamples "/spec/example"
     let dir = curr <> "/spec/example/"
     forM_ input $ \file ->
       it (printf "%s matches output" file) $ do

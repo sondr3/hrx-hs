@@ -6,6 +6,7 @@ module HRX.Internal
   )
 where
 
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
@@ -46,8 +47,7 @@ printDirectory :: Path -> Text -> Text
 printDirectory p b = b <> " " <> printPath p <> "\n"
 
 printFile :: Path -> Maybe Text -> Text -> Text
-printFile _ Nothing _ = ""
-printFile p (Just content) b = b <> " " <> printPath p <> "\n" <> content
+printFile p content b = b <> " " <> printPath p <> "\n" <> fromMaybe "" content
 
 printComment :: Maybe Text -> Text -> Text
 printComment Nothing _ = ""
