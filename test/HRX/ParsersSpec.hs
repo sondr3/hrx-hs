@@ -1,7 +1,7 @@
 module HRX.ParsersSpec (spec) where
 
 import qualified Data.Text as T
-import HRX.Internal (Path (Path), isPathChar, pPath)
+import HRX.Internal (isPathChar, pPath)
 import Test.Hspec (Spec, describe, it, parallel, shouldBe)
 import Test.Hspec.Megaparsec
 import Text.Megaparsec (parse)
@@ -16,8 +16,8 @@ spec = parallel $ do
 
   describe "parses path" $ do
     it "parses" $ do
-      parse pPath "" "dir/file1\n" `parseSatisfies` (== Path "dir/file1")
-      parse pPath "" "path/to/file2\n" `parseSatisfies` (== Path "path/to/file2")
+      parse pPath "" "dir/file1\n" `parseSatisfies` (== "dir/file1")
+      parse pPath "" "path/to/file2\n" `parseSatisfies` (== "path/to/file2")
     it "fails" $ do
       parse pPath "" `shouldFailOn` "/file\n"
       parse pPath "" `shouldFailOn` "dir//file\n"

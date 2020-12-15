@@ -38,7 +38,7 @@ fromHRX content = do
 toHRX :: Archive -> Text
 toHRX archive =
   T.concat $
-    map (\x -> uncurry printEntry x boundary) (archiveEntries archive)
+    map (`printEntry` boundary) (archiveEntries archive)
       <> [printComment (archiveComment archive) boundary]
   where
     boundary = "<" <> T.replicate (archiveBoundary archive) "=" <> ">"
@@ -46,25 +46,22 @@ toHRX archive =
 entriesGlob :: FilePattern -> Archive -> [Entry]
 entriesGlob glob archive = mapMaybe (entryGlob glob) (archiveEntries archive)
 
-printEntry :: Path -> Entry -> Text -> Text
-printEntry p (Entry (EntryFile content) comment) b = printComment comment b <> printFile p content b
-printEntry p (Entry EntryDirectory comment) b = printComment comment b <> printDirectory p b
+printEntry :: Entry -> Text -> Text
+printEntry (Entry (EntryFile content) p comment) b = printComment comment b <> printFile p content b
+printEntry (Entry EntryDirectory p comment) b = printComment comment b <> printDirectory p b
 
-printDirectory :: Path -> Text -> Text
-printDirectory p b = b <> " " <> printPath p <> "\n"
+printDirectory :: Text -> Text -> Text
+printDirectory p b = b <> " " <> p <> "\n"
 
-printFile :: Path -> Maybe Text -> Text -> Text
-printFile p content b = b <> " " <> printPath p <> "\n" <> fromMaybe "" content
+printFile :: Text -> Maybe Text -> Text -> Text
+printFile p content b = b <> " " <> p <> "\n" <> fromMaybe "" content
 
 printComment :: Maybe Text -> Text -> Text
 printComment Nothing _ = ""
 printComment (Just comment) b = b <> "\n" <> comment
 
-printPath :: Path -> Text
-printPath (Path p) = p
-
-entryGlob :: FilePattern -> (Path, Entry) -> Maybe Entry
-entryGlob glob (Path path, entry) = if glob ?== T.unpack path then Just entry else Nothing
+entryGlob :: FilePattern -> Entry -> Maybe Entry
+entryGlob glob e@(Entry _ path _) = if glob ?== T.unpack path then Just e else Nothing
 
 parse :: FilePath -> Text -> Either (ParseErrorBundle Text ParserError) Archive
 parse path input = case M.parse pArchive path input of

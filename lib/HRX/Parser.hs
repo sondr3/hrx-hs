@@ -30,19 +30,18 @@ data Archive = Archive
   { -- | Width of boundary in `=`
     archiveBoundary :: Int,
     -- | Entries in the file
-    archiveEntries :: [(Path, Entry)],
+    archiveEntries :: [Entry],
     -- | Optional final comment
     archiveComment :: Maybe Text
   }
   deriving (Show, Eq)
 
-newtype Path = Path Text deriving (Show, Eq, Ord)
-
-isDir :: Path -> Bool
-isDir (Path path) = T.last path == '/'
+isDir :: Text -> Bool
+isDir path = T.last path == '/'
 
 data Entry = Entry
   { entryData :: EntryType,
+    entryPath :: Text,
     entryComment :: Maybe Text
   }
   deriving (Show, Eq)
@@ -94,12 +93,12 @@ pPathComponent = do
 pSlash :: Parser Text
 pSlash = string "/" <* notFollowedBy (string "/") <?> "Slash"
 
-pPath :: Parser Path
+pPath :: Parser Text
 pPath = do
   root <- pPathComponent <?> "Path root"
   rest <- many (pPathComponent <|> pSlash) <?> "Path rest"
   void eol
-  return $ Path (root <> T.concat rest)
+  return (root <> T.concat rest)
 
 pBoundary :: Parser Text
 pBoundary = string "<" <> takeWhile1P Nothing (== '=') <> string ">" <?> "Boundary"
@@ -113,7 +112,7 @@ pComment b = do
       void eol
       pBody bC
 
-pEntry :: Text -> Parser (Path, Entry)
+pEntry :: Text -> Parser Entry
 pEntry b = do
   entryComment <- (optional . try $ pComment b) <?> "Entry comment"
   entryBoundary <- pBoundary <?> "Entry boundary"
@@ -121,14 +120,14 @@ pEntry b = do
     then customFailure BoundaryWidthError
     else do
       void hspace1
-      path <- pPath <?> "Directory path"
-      if isDir path
+      entryPath <- pPath <?> "Directory path"
+      if isDir entryPath
         then do
           void (many eol <?> "Directory")
-          return (path, Entry {entryComment, entryData = EntryDirectory})
+          return Entry {entryComment, entryPath, entryData = EntryDirectory}
         else do
           entryData <- pFile entryBoundary <?> "File"
-          return (path, Entry {entryComment, entryData})
+          return Entry {entryComment, entryPath, entryData}
 
 pFile :: Text -> Parser EntryType
 pFile b = do
@@ -149,4 +148,4 @@ pArchive = do
 validArchive :: Archive -> Bool
 validArchive archive = length (nub paths) == length paths
   where
-    paths = map fst (archiveEntries archive)
+    paths = map entryPath (archiveEntries archive)
