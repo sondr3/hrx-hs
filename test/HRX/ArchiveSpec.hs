@@ -1,13 +1,34 @@
 module HRX.ArchiveSpec (spec) where
 
+import Data.Maybe (fromJust)
 import HRX.Internal
 import HRX.TestUtils (liftEither, testParse)
 import Test.Hspec
 
 spec :: Spec
 spec = parallel $ do
-  describe "glob" $ do
-    let archive = liftEither $ testParse pArchive "<===> file\nfile contents\n\n<===> dir/\n<===>\ncomment contents\n\n<===> super/sub\nsub contents\n\n<===> very/deeply/\n<===> very/deeply/nested/file\nnested contents\n\n<===> last\nthe last file"
+  let archive = liftEither $ testParse pArchive "<===> file\nfile contents\n<===> dir/\n<===>\ncomment contents\n<===> super/sub\nsub contents\n<===> very/deeply/\n<===> very/deeply/nested/file\nnested contents\n<===> last\nthe last file"
+
+  describe "findEntry" $ do
+    it "doesn't return an empty path" $ findEntry "" archive `shouldBe` Nothing
+    it "doesn't return a path that's not in the archive" $ findEntry "non/existent/file" archive `shouldBe` Nothing
+    it "doesn't return an implicit directory" $ findEntry "super" archive `shouldBe` Nothing
+    it "doesn't return a file wih a slash" $ findEntry "super/sub/" archive `shouldBe` Nothing
+    it "returns a file at the root level" $ do
+      let entry = fromJust $ findEntry "file" archive
+      entryContent (entryData entry) `shouldBe` Just "file contents\n"
+
+    it "returns a file in a directory" $ do
+      let entry = fromJust $ findEntry "super/sub" archive
+      entryContent (entryData entry) `shouldBe` Just "sub contents\n"
+
+    it "returns an explicit directory" $ do
+      let entry = fromJust $ findEntry "dir" archive
+      entryPath entry `shouldBe` "dir/"
+
+    it "returns an explicit directory with a leading slash" $ do
+      let entry = fromJust $ findEntry "dir/" archive
+      entryPath entry `shouldBe` "dir/"
 
   describe "findEntriesGlob" $ do
     it "returns nothing for an empty glob" $ findEntriesGlob "" archive `shouldBe` []

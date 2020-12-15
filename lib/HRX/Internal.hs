@@ -3,12 +3,14 @@ module HRX.Internal
     writeArchive,
     toHRX,
     fromHRX,
-    entriesGlob,
+    findEntry,
+    findEntriesGlob,
     module HRX.Parser,
   )
 where
 
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.List (find)
+import Data.Maybe (fromMaybe, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
@@ -43,8 +45,16 @@ toHRX archive =
   where
     boundary = "<" <> T.replicate (archiveBoundary archive) "=" <> ">"
 
-entriesGlob :: FilePattern -> Archive -> [Entry]
-entriesGlob glob archive = mapMaybe (entryGlob glob) (archiveEntries archive)
+findEntry :: Text -> Archive -> Maybe Entry
+findEntry path archive
+  | isNothing findEntry' = findDir
+  | otherwise = findEntry'
+  where
+    findDir = find (\x -> entryPath x == (path <> "/")) (archiveEntries archive)
+    findEntry' = find (\x -> entryPath x == path) (archiveEntries archive)
+
+findEntriesGlob :: FilePattern -> Archive -> [Entry]
+findEntriesGlob glob archive = mapMaybe (entryGlob glob) (archiveEntries archive)
 
 printEntry :: Entry -> Text -> Text
 printEntry (Entry (EntryFile content) p comment) b = printComment comment b <> printFile p content b
