@@ -31,7 +31,10 @@ createAndWriteFile path content = do
   TIO.writeFile path content
 
 toHRX :: Archive -> Text
-toHRX archive = T.concat $ map (\x -> uncurry printEntry x boundary) (archiveEntries archive)
+toHRX archive =
+  T.concat $
+    map (\x -> uncurry printEntry x boundary) (archiveEntries archive)
+      <> [printComment (archiveComment archive) boundary]
   where
     boundary = "<" <> T.replicate (archiveBoundary archive) "=" <> ">"
 
