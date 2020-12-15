@@ -30,6 +30,15 @@ spec = parallel $ do
       let entry = fromJust $ findEntry "dir/" archive
       entryPath entry `shouldBe` "dir/"
 
+  describe "readEntry" $ do
+    it "returns Nothing for an empty path" $ readEntry "" archive `shouldBe` Nothing
+    it "returns Nothing for a path that's not in the archive" $ readEntry "non/existent/file" archive `shouldBe` Nothing
+    it "returns Nothing for an implicit directory" $ readEntry "super" archive `shouldBe` Nothing
+    it "returns Nothing for a file wih a slash" $ readEntry "super/sub/" archive `shouldBe` Nothing
+    it "returns Nothing for a directory" $ readEntry "dir" archive `shouldBe` Nothing
+    it "returns the contents of a file at the root level" $ readEntry "file" archive `shouldBe` Just "file contents\n"
+    it "returns the contents of a file in a directory" $ readEntry "super/sub" archive `shouldBe` Just "sub contents\n"
+
   describe "findEntriesGlob" $ do
     it "returns nothing for an empty glob" $ findEntriesGlob "" archive `shouldBe` []
     it "returns nothing for a path that's not in the archive" $ findEntriesGlob "non/existent/file" archive `shouldBe` []

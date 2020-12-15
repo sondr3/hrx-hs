@@ -5,6 +5,8 @@ module HRX
     EntryType (..),
 
     -- * Pure functions for working with HRX archives
+    readEntry,
+    findEntry,
     findEntriesGlob,
 
     -- * IO functions to read/write archives and entries
@@ -22,8 +24,10 @@ import HRX.Internal
     Entry (..),
     EntryType (..),
     findEntriesGlob,
+    findEntry,
     fromHRX,
     readArchive,
+    readEntry,
     toHRX,
     writeArchive,
   )

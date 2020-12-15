@@ -5,6 +5,7 @@ module HRX.Internal
     fromHRX,
     findEntry,
     findEntriesGlob,
+    readEntry,
     module HRX.Parser,
   )
 where
@@ -55,6 +56,9 @@ findEntry path archive
 
 findEntriesGlob :: FilePattern -> Archive -> [Entry]
 findEntriesGlob glob archive = mapMaybe (entryGlob glob) (archiveEntries archive)
+
+readEntry :: Text -> Archive -> Maybe Text
+readEntry path archive = find (\x -> entryPath x == path) (archiveEntries archive) >>= \e -> entryContent $ entryData e
 
 printEntry :: Entry -> Text -> Text
 printEntry (Entry (EntryFile content) p comment) b = printComment comment b <> printFile p content b
