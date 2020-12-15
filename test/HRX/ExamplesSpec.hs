@@ -2,11 +2,11 @@ module HRX.ExamplesSpec (spec, listExamples) where
 
 import Control.Monad (forM_)
 import Data.List (isSuffixOf)
-import qualified Data.Text as T
-import HRX.Internal (pArchive)
-import HRX.TestUtils (testParse)
+import qualified Data.Text.IO as TIO
+import HRX.Internal (pArchive, toHRX)
+import HRX.TestUtils (parseFile, testParse)
 import System.Directory (getCurrentDirectory, listDirectory)
-import Test.Hspec (Spec, describe, it, runIO, xit)
+import Test.Hspec (Spec, describe, it, runIO, shouldBe, xit)
 import Test.Hspec.Megaparsec
 import Text.Printf (printf)
 
@@ -24,8 +24,17 @@ spec = do
     let dir = curr <> "/spec/example/"
     forM_ files $ \file ->
       it (printf "should parse %s" file) $ do
-        content <- readFile (dir <> file)
-        testParse pArchive `shouldSucceedOn` T.pack content
+        content <- TIO.readFile (dir <> file)
+        testParse pArchive `shouldSucceedOn` content
+
+  describe "valid examples output match" $ do
+    input <- runIO $ listExamples "/spec/example"
+    let dir = curr <> "/spec/example/"
+    forM_ input $ \file ->
+      it (printf "%s matches output" file) $ do
+        content <- TIO.readFile (dir <> file)
+        archive <- parseFile content
+        toHRX archive `shouldBe` content
 
   describe "directory contents" $ do
     it "cannot have it" $ testParse pArchive `shouldFailOn` "<===> dir/\nA directory can't have text contents.\n"
