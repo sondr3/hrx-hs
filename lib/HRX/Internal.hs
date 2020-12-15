@@ -16,12 +16,12 @@ import System.FilePath (takeDirectory)
 import Text.Megaparsec (ParseErrorBundle)
 import qualified Text.Megaparsec as M
 
-readArchive :: FilePath -> IO Archive
+readArchive :: FilePath -> IO (Either ParserError Archive)
 readArchive path = do
   file <- TIO.readFile path
   case parse path file of
-    Right a -> return a
-    Left err -> error $ M.errorBundlePretty err
+    Right a -> return $ Right a
+    Left err -> return $ Left $ ParserError $ T.pack $ M.errorBundlePretty err
 
 writeArchive :: Archive -> FilePath -> IO ()
 writeArchive archive path = createAndWriteFile path (toHRX archive)
