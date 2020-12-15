@@ -2,7 +2,7 @@
 
 module HRX
   ( readArchive,
-    printArchive,
+    toHRX,
   )
 where
 
@@ -20,8 +20,8 @@ readArchive path = do
     Right a -> return a
     Left err -> error $ M.errorBundlePretty err
 
-printArchive :: Archive -> Text
-printArchive archive = T.concat $ map (\x -> uncurry printEntry x boundary) (archiveEntries archive)
+toHRX :: Archive -> Text
+toHRX archive = T.concat $ map (\x -> uncurry printEntry x boundary) (archiveEntries archive)
   where
     boundary = "<" <> T.replicate (archiveBoundary archive) "=" <> ">"
 
@@ -38,7 +38,7 @@ printFile p (Just content) b = b <> " " <> printPath p <> "\n" <> content
 
 printComment :: Maybe Text -> Text -> Text
 printComment Nothing _ = ""
-printComment (Just comment) b = b <> "\n" <> comment <> "\n"
+printComment (Just comment) b = b <> "\n" <> comment
 
 printPath :: Path -> Text
 printPath (Path p) = p
