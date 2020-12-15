@@ -80,6 +80,7 @@ test-suite hrx-hs-test
   hs-source-dirs:     test
   main-is:            Spec.hs
   other-modules:
+    HRX.ArchiveSpec
     HRX.ExamplesSpec
     HRX.HRXSpec
     HRX.ParserSpec
