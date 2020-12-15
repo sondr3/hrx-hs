@@ -2,6 +2,7 @@
 
 module HRX
   ( readArchive,
+    writeArchive,
     toHRX,
   )
 where
@@ -10,6 +11,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import HRX.Internal (Archive, Entry (..), EntryType (..), ParserError, Path (..), archiveBoundary, archiveEntries, pArchive)
+import System.Directory (createDirectoryIfMissing)
+import System.FilePath (takeDirectory)
 import Text.Megaparsec (ParseErrorBundle)
 import qualified Text.Megaparsec as M
 
@@ -19,6 +22,14 @@ readArchive path = do
   case parse path file of
     Right a -> return a
     Left err -> error $ M.errorBundlePretty err
+
+writeArchive :: Archive -> FilePath -> IO ()
+writeArchive archive path = createAndWriteFile path (toHRX archive)
+
+createAndWriteFile :: FilePath -> Text -> IO ()
+createAndWriteFile path content = do
+  createDirectoryIfMissing True $ takeDirectory path
+  TIO.writeFile path content
 
 toHRX :: Archive -> Text
 toHRX archive = T.concat $ map (\x -> uncurry printEntry x boundary) (archiveEntries archive)
