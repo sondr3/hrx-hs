@@ -2,6 +2,7 @@ module HRX.Internal
   ( readArchive,
     writeArchive,
     toHRX,
+    fromHRX,
     module HRX.Parser,
   )
 where
@@ -30,6 +31,12 @@ createAndWriteFile :: FilePath -> Text -> IO ()
 createAndWriteFile path content = do
   createDirectoryIfMissing True $ takeDirectory path
   TIO.writeFile path content
+
+fromHRX :: Text -> Either ParserError Archive
+fromHRX content = do
+  case parse "" content of
+    Right a -> Right a
+    Left err -> Left $ ParserError $ T.pack $ M.errorBundlePretty err
 
 toHRX :: Archive -> Text
 toHRX archive =

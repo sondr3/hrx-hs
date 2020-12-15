@@ -79,6 +79,7 @@ test-suite hrx-hs-test
   main-is:            Spec.hs
   other-modules:
     HRX.ExamplesSpec
+    HRX.HRXSpec
     HRX.ParserSpec
     HRX.ParsersSpec
     HRX.TestUtils
