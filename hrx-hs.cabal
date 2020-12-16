@@ -11,7 +11,7 @@ license-file:       LICENSE LICENSE_APACHE
 author:             Sondre Nilsen
 maintainer:         nilsen.sondre@gmail.com
 build-type:         Simple
-category:           Text
+category:           Codec
 extra-source-files:
   CHANGELOG.md
   README.md
@@ -32,11 +32,10 @@ common config
 
   build-depends:
     , base         ^>=4.14.1.0
-    , directory    ^>=1.3.6.1
+    , directory    ^>=1.3.6.0
     , filepath     ^>=1.4.2.1
     , filepattern  ^>=0.1.2
     , megaparsec   ^>=9.0.1
-    , mtl          ^>=2.2.2
     , text         ^>=1.2.3.2
 
 common library
@@ -60,16 +59,16 @@ flag dev
 
 library hrx-internal
   import:          config, library
-  other-modules:   HRX.Parser
-  exposed-modules: HRX.Internal
+  other-modules:   Codec.Archive.HRX.Parser
+  exposed-modules: Codec.Archive.HRX.Internal
   hs-source-dirs:  lib
 
 library
   import:          config, library
-  exposed-modules: HRX
+  exposed-modules: Codec.Archive.HRX
   other-modules:
-    HRX.Internal
-    HRX.Parser
+    Codec.Archive.HRX.Internal
+    Codec.Archive.HRX.Parser
 
   build-depends:   hrx-internal
   hs-source-dirs:  lib
@@ -80,12 +79,12 @@ test-suite hrx-hs-test
   hs-source-dirs:     test
   main-is:            Spec.hs
   other-modules:
-    HRX.ArchiveSpec
-    HRX.ExamplesSpec
-    HRX.HRXSpec
-    HRX.ParserSpec
-    HRX.ParsersSpec
-    HRX.TestUtils
+    Codec.Archive.HRX.ArchiveSpec
+    Codec.Archive.HRX.ExamplesSpec
+    Codec.Archive.HRX.HRXSpec
+    Codec.Archive.HRX.ParserSpec
+    Codec.Archive.HRX.ParsersSpec
+    TestUtils
 
   default-extensions: OverloadedStrings
   build-tool-depends: hspec-discover:hspec-discover ^>=2.7.4
