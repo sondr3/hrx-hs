@@ -1,4 +1,4 @@
-module HRX.Internal
+module Codec.Archive.HRX.Internal
   ( readArchive,
     writeArchive,
     toHRX,
@@ -7,16 +7,16 @@ module HRX.Internal
     findEntry,
     findEntriesGlob,
     readEntry,
-    module HRX.Parser,
+    module Codec.Archive.HRX.Parser,
   )
 where
 
+import Codec.Archive.HRX.Parser
 import Data.List (find)
 import Data.Maybe (fromMaybe, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
-import HRX.Parser
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (takeDirectory)
 import System.FilePattern (FilePattern, (?==))

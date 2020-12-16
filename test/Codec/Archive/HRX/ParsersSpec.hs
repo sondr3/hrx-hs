@@ -1,7 +1,7 @@
-module HRX.ParsersSpec (spec) where
+module Codec.Archive.HRX.ParsersSpec (spec) where
 
+import Codec.Archive.HRX.Internal (isPathChar, pPath)
 import qualified Data.Text as T
-import HRX.Internal (isPathChar, pPath)
 import Test.Hspec (Spec, describe, it, parallel, shouldBe)
 import Test.Hspec.Megaparsec
 import Text.Megaparsec (parse)

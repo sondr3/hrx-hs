@@ -1,10 +1,10 @@
-module HRX.ParserSpec (spec) where
+module Codec.Archive.HRX.ParserSpec (spec) where
 
+import Codec.Archive.HRX.Internal
 import qualified Data.Text as T
-import HRX.Internal
-import HRX.TestUtils (testParse)
 import Test.Hspec
 import Test.Hspec.Megaparsec
+import TestUtils (testParse)
 
 spec :: Spec
 spec = parallel $ do

@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeApplications #-}
 
-module HRX.Parser where
+module Codec.Archive.HRX.Parser where
 
 import Control.Monad (void)
 import Data.Char (ord)

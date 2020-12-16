@@ -1,13 +1,13 @@
-module HRX.ExamplesSpec (spec, listExamples) where
+module Codec.Archive.HRX.ExamplesSpec (spec, listExamples) where
 
+import Codec.Archive.HRX.Internal (pArchive, toHRX)
 import Control.Monad (forM_)
 import Data.List (isSuffixOf)
 import qualified Data.Text.IO as TIO
-import HRX.Internal (pArchive, toHRX)
-import HRX.TestUtils (parseFile, testParse)
 import System.Directory (getCurrentDirectory, listDirectory)
 import Test.Hspec (Spec, describe, it, runIO, shouldBe, xit)
 import Test.Hspec.Megaparsec
+import TestUtils (parseFile, testParse)
 import Text.Printf (printf)
 
 listExamples :: String -> IO [FilePath]

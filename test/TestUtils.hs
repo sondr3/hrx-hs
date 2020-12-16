@@ -1,7 +1,7 @@
-module HRX.TestUtils where
+module TestUtils where
 
+import Codec.Archive.HRX.Internal (Archive, pArchive)
 import Data.Text (Text)
-import HRX.Internal (Archive, pArchive)
 import Text.Megaparsec (ParseErrorBundle, Parsec, errorBundlePretty, parse)
 
 -- | Test utility to run a parser on some input

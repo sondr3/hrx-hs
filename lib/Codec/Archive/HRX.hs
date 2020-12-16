@@ -1,4 +1,4 @@
-module HRX
+module Codec.Archive.HRX
   ( -- * Data structures
     Archive (..),
     Entry (..),
@@ -20,7 +20,7 @@ module HRX
   )
 where
 
-import HRX.Internal
+import Codec.Archive.HRX.Internal
   ( Archive (..),
     Entry (..),
     EntryType (..),

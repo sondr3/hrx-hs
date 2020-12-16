@@ -1,8 +1,8 @@
-module HRX.ArchiveSpec (spec) where
+module Codec.Archive.HRX.ArchiveSpec (spec) where
 
+import Codec.Archive.HRX.Internal
+import TestUtils (liftEither, testParse)
 import Data.Maybe (fromJust)
-import HRX.Internal
-import HRX.TestUtils (liftEither, testParse)
 import Test.Hspec
 
 spec :: Spec

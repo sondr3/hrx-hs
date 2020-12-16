@@ -1,0 +1,12 @@
+<===> file
+file contents
+<===> dir/
+<===>
+comment contents
+<===> super/sub
+sub contents
+<===> very/deeply/
+<===> very/deeply/nested/file
+nested contents
+<===> last
+the last file
