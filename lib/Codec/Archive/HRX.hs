@@ -18,11 +18,15 @@
 -- To use this library you need to add it as a dependency in your projuct, e.g.
 -- by adding it to @build-depends@ in your @.cabal@ file.
 --
--- > build-depends: hrx-hs ^>= 0.1.0
+-- @
+-- build-depends: hrx-hs ^>= 0.1.0
+-- @
 --
 -- This module does not use common names and can be directly imported:
 --
--- > __import__ Codec.Archive.HRX
+-- @
+-- __import__ Codec.Archive.HRX
+-- @
 module Codec.Archive.HRX
   ( -- | HRX - Human Readable Archive - is a plain-text, human-readable format for
     -- defining multiple virtual text files in a single physical file.
@@ -58,8 +62,8 @@ module Codec.Archive.HRX
     -- comment contents
     -- \<===\> super/sub
     -- sub contents
-    -- \<===\> very/deeply/
-    -- \<===\> very/deeply/nested/file
+    -- \<===\> very\/deeply\/
+    -- \<===\> very\/deeply\/nested\/file
     -- nested contents
     -- \<===\> last
     -- the last file
