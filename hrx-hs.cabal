@@ -31,7 +31,7 @@ common config
     -Wincomplete-uni-patterns -Wredundant-constraints
 
   build-depends:
-    , base         ^>=4.14.1.0
+    , base         >=4.12    && <4.15
     , directory    ^>=1.3.6.0
     , filepath     ^>=1.4.2.1
     , filepattern  ^>=0.1.2
