@@ -147,7 +147,7 @@ pArchive = do
   archiveEntries <- many (try $ pEntry b) <?> "Entries"
   archiveComment <- (optional . try $ pComment b) <?> "Archive comment"
   void eof <?> "End of archive"
-  let archive = Archive {archiveBoundary = T.length b - 2, archiveComment, archiveEntries}
+  let archive = Archive {archiveBoundary = max (T.length b - 2) 0, archiveComment, archiveEntries}
   if validArchive archive
     then return archive
     else customFailure $ ParserError "Duplicate file/directory"
