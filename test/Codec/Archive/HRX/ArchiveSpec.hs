@@ -83,3 +83,10 @@ spec = parallel $ do
       length entries `shouldBe` 2
       entryPath (head entries) `shouldBe` "very/deeply/"
       entryPath (head $ tail entries) `shouldBe` "very/deeply/nested/file"
+
+  describe "lastComment" $ do
+    it "returns nothing when it doesn't exist" $ lastComment archive `shouldBe` Nothing
+    it "returns the only comment in an archive" $ do
+      lastComment (liftEither $ testParse pArchive "<===>\ncomment contents") `shouldBe` Just "comment contents"
+    it "returns the last comment when you have multiple" $ do
+      lastComment (liftEither $ testParse pArchive "<===>\ncomment 1\n<===> dir/\n<===>\ncomment 2") `shouldBe` Just "comment 2"

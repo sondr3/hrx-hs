@@ -85,6 +85,7 @@ module Codec.Archive.HRX
     readEntry,
     findEntry,
     findEntriesGlob,
+    lastComment,
 
     -- ** IO
 
@@ -112,6 +113,7 @@ import Codec.Archive.HRX.Internal
     findEntry,
     fromHRX,
     fromHRX',
+    lastComment,
     readArchive,
     readEntry,
     toHRX,

@@ -9,6 +9,7 @@ module Codec.Archive.HRX.Internal
     findEntriesGlob,
     readEntry,
     liftEither,
+    lastComment,
     module Codec.Archive.HRX.Parser,
   )
 where
@@ -44,6 +45,12 @@ readArchive path = do
 -- @since 0.1.0
 writeArchive :: Archive -> FilePath -> IO ()
 writeArchive archive path = createAndWriteFile path (toHRX archive)
+
+-- | Get the last comment of the archive, if any.
+--
+-- @since 0.1.0
+lastComment :: Archive -> Maybe Text
+lastComment = archiveComment
 
 -- | Attempt to parse some 'Text' to an 'Archive'.
 --
