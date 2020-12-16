@@ -13,6 +13,7 @@ import Text.Megaparsec.Char (eol, hspace1, string)
 
 type Parser = Parsec ParserError Text
 
+-- | Errors that might occur while parsing.
 data ParserError
   = ParserError Text
   | PathError Text
@@ -26,6 +27,7 @@ instance ShowErrorComponent ParserError where
   showErrorComponent BoundaryWidthError = "Boundary did not match first boundary in archive"
   showErrorComponent (DuplicateFileError e) = T.unpack e ++ " defined twice"
 
+-- | HRX file.
 data Archive = Archive
   { -- | Width of boundary in `=`
     archiveBoundary :: Int,
@@ -39,13 +41,18 @@ data Archive = Archive
 isDir :: Text -> Bool
 isDir path = T.last path == '/'
 
+-- | An entry in the archive, is either a file or a directory.
 data Entry = Entry
-  { entryData :: EntryType,
+  { -- | The type of the entry.
+    entryData :: EntryType,
+    -- | Path to the file, directories always end in \'@/@\'.
     entryPath :: Text,
+    -- | An optional comment for the entry.
     entryComment :: Maybe Text
   }
   deriving (Show, Eq)
 
+-- | A file with its (optional) content or a directory.
 data EntryType
   = EntryFile {entryContent :: Maybe Text}
   | EntryDirectory
