@@ -16,6 +16,7 @@ module HRX
     -- * Serialization functions to/from text
     fromHRX,
     toHRX,
+    toHRX',
   )
 where
 
@@ -29,5 +30,6 @@ import HRX.Internal
     readArchive,
     readEntry,
     toHRX,
+    toHRX',
     writeArchive,
   )

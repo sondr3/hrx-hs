@@ -2,6 +2,7 @@ module HRX.Internal
   ( readArchive,
     writeArchive,
     toHRX,
+    toHRX',
     fromHRX,
     findEntry,
     findEntriesGlob,
@@ -37,6 +38,9 @@ fromHRX content = do
   case parse "" content of
     Right a -> Right a
     Left err -> Left $ ParserError $ T.pack $ M.errorBundlePretty err
+
+toHRX' :: Archive -> String
+toHRX' archive = T.unpack $ toHRX archive
 
 toHRX :: Archive -> Text
 toHRX archive =
