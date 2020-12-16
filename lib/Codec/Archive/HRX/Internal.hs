@@ -29,6 +29,8 @@ import qualified Text.Megaparsec as M
 -- >>> archive = liftEither $ fromHRX "<===> file\nfile contents\n<===> dir/\n<===>\ncomment contents\n<===> super/sub\nsub contents\n<===> very/deeply/\n<===> very/deeply/nested/file\nnested contents\n<===> last\nthe last file"
 
 -- | Read an archive from the file system and parse it.
+--
+-- @since 0.1.0
 readArchive :: FilePath -> IO (Either ParserError Archive)
 readArchive path = do
   file <- TIO.readFile path
@@ -38,10 +40,14 @@ readArchive path = do
 
 -- | Write an archive to a given file. Will create any intermediate folders
 -- if required.
+--
+-- @since 0.1.0
 writeArchive :: Archive -> FilePath -> IO ()
 writeArchive archive path = createAndWriteFile path (toHRX archive)
 
 -- | Attempt to parse some 'Text' to an 'Archive'.
+--
+-- @since 0.1.0
 --
 -- ==== __Examples__
 --
@@ -57,10 +63,14 @@ fromHRX content = do
     Left err -> Left $ ParserError $ T.pack $ M.errorBundlePretty err
 
 -- | 'fromHRX', but takes a 'String' instead of 'Text'.
+--
+-- @since 0.1.0
 fromHRX' :: String -> Either ParserError Archive
 fromHRX' content = fromHRX $ T.pack content
 
 -- | Serialize an 'Archive' to a plain-text HRX file.
+--
+-- @since 0.1.0
 --
 -- ==== __Examples__
 --
@@ -78,6 +88,8 @@ toHRX archive =
     boundary = "<" <> T.replicate (archiveBoundary archive) "=" <> ">"
 
 -- | 'toHRX', but takes a 'String' instead of 'Text'.
+--
+-- @since 0.1.0
 toHRX' :: Archive -> String
 toHRX' archive = T.unpack $ toHRX archive
 
@@ -87,6 +99,8 @@ toHRX' archive = T.unpack $ toHRX archive
 -- __NOTE:__ If no file is found at a path, it will try to look up a directory
 -- instead by appending \'@/@\' to the path. This behaviour matches the
 -- reference implementation.
+--
+-- @since 0.1.0
 --
 -- ==== __Examples__
 --
@@ -111,6 +125,8 @@ findEntry path archive
 -- __NOTE:__ This only returns directories if the pattern ends with \'@/@\' or
 -- includes \'@**@\'.
 --
+-- @since 0.1.0
+--
 -- ==== __Examples__
 --
 -- >>> findEntriesGlob "" archive
@@ -127,6 +143,8 @@ findEntriesGlob glob archive = mapMaybe (entryGlob glob) (archiveEntries archive
 -- | Read the contents of a file at the given path in an archive.
 --
 -- __NOTE:__ This will only return content for a file, not a directory.
+--
+-- @since 0.1.0
 --
 -- ==== __Examples__
 --

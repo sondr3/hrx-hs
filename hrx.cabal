@@ -1,7 +1,7 @@
 cabal-version:      2.4
 name:               hrx
 version:            0.1.0
-tested-with:        GHC ==8.10.2
+tested-with:        GHC ==8.6.5 || ==8.8.4 || ==8.10.2
 synopsis:           A Haskell implementation of Google's HRX archive format
 description:        A Haskell implementation of Google's HRX archive format
 homepage:           https://github.com/sondr3/hrx-hs
