@@ -12,7 +12,3 @@ parseFile :: Applicative f => Text -> f Archive
 parseFile t = case parse pArchive "" t of
   Right out -> pure out
   Left err -> error $ errorBundlePretty err
-
-liftEither :: Either a p -> p
-liftEither (Right r) = r
-liftEither (Left _) = error "liftEither called with Left"

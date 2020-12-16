@@ -1,9 +1,9 @@
 module Codec.Archive.HRX.ArchiveSpec (spec) where
 
 import Codec.Archive.HRX.Internal
-import TestUtils (liftEither, testParse)
 import Data.Maybe (fromJust)
 import Test.Hspec
+import TestUtils (testParse)
 
 spec :: Spec
 spec = parallel $ do

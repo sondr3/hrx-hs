@@ -3,7 +3,7 @@ module Codec.Archive.HRX.HRXSpec (spec) where
 import Codec.Archive.HRX.Internal
 import qualified Data.Text as T
 import Test.Hspec
-import TestUtils (liftEither, testParse)
+import TestUtils (testParse)
 
 spec :: Spec
 spec = parallel $ do
