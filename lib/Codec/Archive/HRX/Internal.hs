@@ -42,6 +42,14 @@ writeArchive :: Archive -> FilePath -> IO ()
 writeArchive archive path = createAndWriteFile path (toHRX archive)
 
 -- | Attempt to parse some 'Text' to an 'Archive'.
+--
+-- ==== __Examples__
+--
+-- >>> fromHRX ""
+-- Right (Archive {archiveBoundary = 0, archiveEntries = [], archiveComment = Nothing})
+--
+-- >>> fromHRX "<===>\ncomment\n<===> file\ncontents\n"
+-- Right (Archive {archiveBoundary = 3, archiveEntries = [Entry {entryData = EntryFile {entryContent = Just "contents\n"}, entryPath = "file", entryComment = Just "comment\n"}], archiveComment = Nothing})
 fromHRX :: Text -> Either ParserError Archive
 fromHRX content = do
   case parse "" content of
@@ -53,6 +61,14 @@ fromHRX' :: String -> Either ParserError Archive
 fromHRX' content = fromHRX $ T.pack content
 
 -- | Serialize an 'Archive' to a plain-text HRX file.
+--
+-- ==== __Examples__
+--
+-- >>> toHRX (Archive {archiveBoundary = 3, archiveEntries = [], archiveComment = Just "A HRX file may consist of only a comment and nothing else.\n"})
+-- "<===>\nA HRX file may consist of only a comment and nothing else.\n"
+--
+-- >>> toHRX (Archive {archiveBoundary = 0, archiveEntries = [], archiveComment = Nothing})
+-- ""
 toHRX :: Archive -> Text
 toHRX archive =
   T.concat $
