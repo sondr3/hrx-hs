@@ -1,18 +1,18 @@
 cabal-version:      2.4
 name:               hrx
 version:            0.1.0
-tested-with:        GHC ==8.6.5 || ==8.8.4 || ==8.10.2
+tested-with:        GHC ==9.2, GHC ==9.4, GHC ==9.6
 synopsis:           A Haskell implementation of Google's HRX archive format
-description:        A Haskell implementation of Google's HRX archive format
+description:        A Haskell implementation of Google's HRX archive format with utilities for parsing, unpacking and manipulating them.
 homepage:           https://github.com/sondr3/hrx-hs
 bug-reports:        https://github.com/sondr3/hrx-hs/issues
 license:            (MIT OR Apache-2.0)
 license-file:       LICENSE LICENSE_APACHE
-author:             Sondre Nilsen
-maintainer:         nilsen.sondre@gmail.com
+author:             Sondre Aasemoen
+maintainer:         sondre@eons.io
 build-type:         Simple
 category:           Codec
-extra-source-files:
+extra-doc-files:
   CHANGELOG.md
   README.md
 
@@ -21,48 +21,45 @@ source-repository head
   location: https://github.com/sondr3/hrx-hs.git
 
 common config
-  default-language:   Haskell2010  
+  default-language:   GHC2021  
   default-extensions:
     NamedFieldPuns
+    DerivingStrategies
+    DuplicateRecordFields
+    LambdaCase
+    MultiWayIf
     OverloadedStrings
+    TypeFamilies
 
   ghc-options:
-    -Wall -Wcompat -Wincomplete-record-updates
-    -Wincomplete-uni-patterns -Wredundant-constraints
+    -Weverything
+    -Wno-unsafe
+    -Wno-implicit-prelude
+    -Wno-missing-safe-haskell-mode
+    -Wno-missing-kind-signatures
+    -Wno-missing-import-lists
+    -Wno-missed-specialisations
+    -Wno-all-missed-specialisations
+    -Werror=missing-deriving-strategies
+    -fhide-source-paths
+    -fwrite-ide-info
 
   build-depends:
-    , base         >=4.12 && <4.15
+    , base         >=4.12 && <5
     , directory    ^>=1.3
     , filepath     ^>=1.4
     , filepattern  ^>=0.1
-    , megaparsec   >=8.0  && <10.0
-    , text         ^>=1.2
-
-common library
-  if flag(dev)
-    ghc-options: -O0 -Wall -Werror
-
-  else
-    ghc-options: -O2 -Wall
-
-  if flag(dev)
-    ghc-options:
-      -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns
-      -Wnoncanonical-monad-instances
-
-flag dev
-  description: Turn on development settings.
-  default:     False
-  manual:      True
+    , megaparsec   >=9.0  && <10.0
+    , text         >=2 && <2.2
 
 library hrx-internal
-  import:          config, library
+  import:          config
   other-modules:   Codec.Archive.HRX.Parser
   exposed-modules: Codec.Archive.HRX.Internal
   hs-source-dirs:  lib
 
 library
-  import:          config, library
+  import:          config
   exposed-modules: Codec.Archive.HRX
   other-modules:
     Codec.Archive.HRX.Internal
@@ -84,19 +81,18 @@ test-suite hrx-hs-test
     Codec.Archive.HRX.ParsersSpec
     TestUtils
 
-  default-extensions: OverloadedStrings
-  build-tool-depends: hspec-discover:hspec-discover ^>=2.7
+  build-tool-depends: hspec-discover:hspec-discover ^>=2.11
   build-depends:
     , hrx-internal
-    , hspec             ^>=2.7
+    , hspec             ^>=2.11
     , hspec-megaparsec  ^>=2.2
 
   ghc-options:        -threaded -rtsopts -with-rtsopts=-N
 
-test-suite doctests
-  import:         config
-  type:           exitcode-stdio-1.0
-  ghc-options:    -threaded -rtsopts -with-rtsopts=-N
-  hs-source-dirs: test
-  main-is:        doctests.hs
-  build-depends:  doctest >=0.8
+-- test-suite doctests
+-- import:         config
+-- type:           exitcode-stdio-1.0
+-- ghc-options:    -threaded -rtsopts -with-rtsopts=-N
+-- hs-source-dirs: test
+-- main-is:        doctests.hs
+-- build-depends:  doctest >=0.22

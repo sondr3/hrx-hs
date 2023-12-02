@@ -1,7 +1,7 @@
 module Codec.Archive.HRX.ParsersSpec (spec) where
 
 import Codec.Archive.HRX.Internal (isPathChar, pPath)
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Test.Hspec (Spec, describe, it, parallel, shouldBe)
 import Test.Hspec.Megaparsec
 import Text.Megaparsec (parse)
@@ -10,9 +10,9 @@ spec :: Spec
 spec = parallel $ do
   describe "path-character" $ do
     it "parses correct chars" $
-      all ((== True) . isPathChar) ['a', 'b', '.', '@', '$'] `shouldBe` True
+      all isPathChar ['a', 'b', '.', '@', '$'] `shouldBe` True
     it "does not allow illegal chars" $
-      all ((== False) . isPathChar) ['/', ':', '\\', '\DEL', '\FF'] `shouldBe` True
+      not (any isPathChar ['/', ':', '\\', '\DEL', '\FF']) `shouldBe` True
 
   describe "parses path" $ do
     it "parses" $ do

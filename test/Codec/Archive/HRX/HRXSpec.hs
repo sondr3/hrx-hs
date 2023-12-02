@@ -1,7 +1,7 @@
 module Codec.Archive.HRX.HRXSpec (spec) where
 
 import Codec.Archive.HRX.Internal
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Test.Hspec
 import TestUtils (testParse)
 

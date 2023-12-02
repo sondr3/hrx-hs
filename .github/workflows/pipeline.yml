@@ -8,14 +8,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        ghc: ["8.6", "8.8", "8.10"]
-        cabal: ["3.2"]
+        ghc: ["9.2", "9.4", "9.6", "9.8"]
+        cabal: ["3.10"]
         os: [ubuntu-latest, macOS-latest]
-        exclude:
-          - os: macOS-latest
-            ghc: 8.8.4
-          - os: macOS-latest
-            ghc: 8.6.5
 
     steps:
       - uses: actions/checkout@v2
@@ -23,42 +18,77 @@ jobs:
           submodules: true
 
       - name: Setup Haskell
-        id: setup-haskell-cabal
-        uses: actions/setup-haskell@v1.1.4
+        id: setup
+        uses: haskell-actions/setup@v2
         with:
           ghc-version: ${{ matrix.ghc }}
           cabal-version: ${{ matrix.cabal }}
+          cabal-update: true
 
-      - uses: actions/cache@v2
-        name: Cache cabal-store
+      - name: Configure the build
+        run: |
+          cabal configure --enable-tests --enable-benchmarks --disable-documentation
+          cabal build --dry-run
+
+      - name: Restore cached dependencies
+        uses: actions/cache/restore@v3
+        id: cache
+        env:
+          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-cabal-${{ steps.setup.outputs.cabal-version }}
         with:
-          path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
-          key: ${{ runner.os }}-${{ matrix.ghc }}-cabal
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
+          restore-keys: ${{ env.key }}-
+
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: cabal build all --only-dependencies
+
+      - name: Save cached dependencies
+        uses: actions/cache/save@v3
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
+      - name: Formatting
+        uses: haskell-actions/run-ormolu@v14
+
+      - name: "Set up HLint"
+        uses: haskell-actions/hlint-setup@v2
+        with:
+          version: "3.6.1"
+
+      - name: "Run HLint"
+        uses: haskell-actions/hlint-run@v2
+        with:
+          path: '["lib/", "test/"]'
+          fail-on: warning
 
       - name: Build
-        run: |
-          cabal update
-          cabal build all --enable-tests --write-ghc-environment-files=always
+        run: cabal build all
 
       - name: Test
-        run: |
-          cabal test all --enable-tests --test-show-details=direct
+        run: cabal test all
 
+      - name: Check cabal file
+        run: cabal check
   stack:
     name: stack / ghc ${{ matrix.ghc }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        stack: ["2.3.1"]
-        ghc: ["8.8.4"]
+        stack: ["2.11.1"]
+        ghc: ["9.4.8"]
 
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: true
 
-      - uses: actions/setup-haskell@v1.1.4
-        name: Setup Haskell Stack
+      - name: Setup Haskell
+        id: setup
+        uses: haskell-actions/setup@v2
         with:
           ghc-version: ${{ matrix.ghc }}
           stack-version: ${{ matrix.stack }}

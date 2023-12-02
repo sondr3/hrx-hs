@@ -3,7 +3,7 @@ module Codec.Archive.HRX.ExamplesSpec (spec, listExamples) where
 import Codec.Archive.HRX.Internal (pArchive, toHRX)
 import Control.Monad (forM_)
 import Data.List (isSuffixOf)
-import qualified Data.Text.IO as TIO
+import Data.Text.IO qualified as TIO
 import System.Directory (getCurrentDirectory, listDirectory)
 import Test.Hspec (Spec, describe, it, runIO, shouldBe, xit)
 import Test.Hspec.Megaparsec

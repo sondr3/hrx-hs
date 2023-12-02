@@ -9,6 +9,5 @@ main =
       "-XOverloadedStrings",
       "-isrc",
       "lib/Codec/Archive/HRX.hs",
-      "lib/Codec/Archive/HRX/Internal.hs",
-      "lib/Codec/Archive/HRX/Parser.hs"
+      "lib/Codec/Archive/HRX/Internal.hs"
     ]

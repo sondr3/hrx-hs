@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
 
 module Codec.Archive.HRX.Parser where
 
@@ -7,7 +7,7 @@ import Data.Char (ord)
 import Data.Functor (($>))
 import Data.List (nub)
 import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Text.Megaparsec hiding (State, parse)
 import Text.Megaparsec.Char (eol, hspace1, string)
 
@@ -19,7 +19,7 @@ data ParserError
   | PathError Text
   | BoundaryWidthError
   | DuplicateFileError Text
-  deriving (Show, Eq, Ord)
+  deriving stock (Show, Eq, Ord)
 
 instance ShowErrorComponent ParserError where
   showErrorComponent (ParserError e) = T.unpack e
@@ -36,7 +36,7 @@ data Archive = Archive
     -- | Optional final comment
     archiveComment :: Maybe Text
   }
-  deriving (Show, Eq)
+  deriving stock (Show, Eq)
 
 isDir :: Text -> Bool
 isDir path = T.last path == '/'
@@ -50,13 +50,13 @@ data Entry = Entry
     -- | An optional comment for the entry.
     entryComment :: Maybe Text
   }
-  deriving (Show, Eq)
+  deriving stock (Show, Eq)
 
 -- | A file with its (optional) content or a directory.
 data EntryType
   = EntryFile {entryContent :: Maybe Text}
   | EntryDirectory
-  deriving (Show, Eq)
+  deriving stock (Show, Eq)
 
 getEntries :: [EntryType] -> ([EntryType], [EntryType])
 getEntries ents = entries' ents ([], [])
@@ -95,6 +95,7 @@ pPathComponent = do
   comp <- takeWhile1P Nothing isPathChar
   if valid comp then return comp else customFailure $ PathError comp
   where
+    valid :: Text -> Bool
     valid x = x /= "." && x /= ".."
 
 pSlash :: Parser Text

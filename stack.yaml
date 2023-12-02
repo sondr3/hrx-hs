@@ -1,4 +1,2 @@
-resolver: lts-16.26
-extra-deps:
-  - hspec-megaparsec-2.2.0@sha256:679b9b91ea0ed0c36d6782d6051a08e0825409d10adbab8c8cfa9c8bd8bfc245,1802
-  - megaparsec-9.0.1@sha256:b0d7cd8843af2687b1a5a4add523836c782c400a375e4d7b6989a827b5605ac6,3117
+resolver: lts-21.22
+allow-newer: true

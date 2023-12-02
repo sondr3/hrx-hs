@@ -18,13 +18,13 @@ import Codec.Archive.HRX.Parser
 import Data.List (find)
 import Data.Maybe (fromMaybe, isNothing, mapMaybe)
 import Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
+import Data.Text qualified as T
+import Data.Text.IO qualified as TIO
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (takeDirectory)
 import System.FilePattern (FilePattern, (?==))
 import Text.Megaparsec (ParseErrorBundle)
-import qualified Text.Megaparsec as M
+import Text.Megaparsec qualified as M
 
 -- $setup
 -- >>> archive = liftEither $ fromHRX "<===> file\nfile contents\n<===> dir/\n<===>\ncomment contents\n<===> super/sub\nsub contents\n<===> very/deeply/\n<===> very/deeply/nested/file\nnested contents\n<===> last\nthe last file"

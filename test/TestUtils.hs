@@ -8,7 +8,7 @@ import Text.Megaparsec (ParseErrorBundle, Parsec, errorBundlePretty, parse)
 testParse :: Parsec e s a -> s -> Either (ParseErrorBundle s e) a
 testParse p = parse p ""
 
-parseFile :: Applicative f => Text -> f Archive
+parseFile :: (Applicative f) => Text -> f Archive
 parseFile t = case parse pArchive "" t of
   Right out -> pure out
   Left err -> error $ errorBundlePretty err
