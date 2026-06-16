@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Formatting
-        uses: haskell-actions/run-ormolu@v17
+        uses: haskell-actions/run-ormolu@v18
 
       - name: "Set up HLint"
         uses: haskell-actions/hlint-setup@v2
