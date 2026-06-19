@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Formatting
         uses: haskell-actions/run-ormolu@v19
 
@@ -33,7 +33,7 @@ jobs:
         cabal: ["3.10"]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: true
 
@@ -89,7 +89,7 @@ jobs:
         ghc: ["9.4.8"]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: true
 
